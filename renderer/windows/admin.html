@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel de Administración</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/navbar.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+</head>
+
+<body>
+  <div class="container">
+    
+    <!-- ✅ INICIO: BLOQUE DE CARGA SÍNCRONA CON DIAGNÓSTICO AVANZADO -->
+    <!-- ✅ INICIO: BLOQUE DE CARGA SÍNCRONA (VERSIÓN FINAL) -->
+<aside id="sidebar-placeholder" class="sidebar"></aside>
+
+    <script>
+      (function () {
+        const placeholder = document.getElementById('sidebar-placeholder');
+        if (placeholder) {
+          try {
+            const request = new XMLHttpRequest();
+            request.open('GET', '_sidebar.html', false); // Síncrono
+            request.send(null);
+            if (request.status === 200 || request.status === 0) {
+              placeholder.innerHTML = request.responseText;
+            } else {
+              placeholder.innerHTML = '<p style="color:red;">Error al cargar menú.</p>';
+            }
+          } catch (error) {
+            console.error("Error cargando sidebar:", error);
+          }
+        }
+      })();
+    </script>
+    <!-- ✅ FIN: BLOQUE DE CARGA SÍNCRONA -->
+    <!-- ✅ FIN: BLOQUE DE CARGA SÍNCRONA -->
+    <main class="main-content">
+      <header class="main-header">
+        <h1>Panel de Administración</h1>
+      </header>
+<!-- 🔔 Banner Premium -->
+<div id="premium-banner" class="banner banner-info hidden">
+  <div class="banner-text">
+    <strong>Plan Free:</strong> activá las funciones premium (backup en la nube, multi-equipo, estadísticas online).
+  </div>
+  <button id="close-premium-banner" class="banner-close" aria-label="Cerrar">×</button>
+</div>
+
+      <div class="content-body">
+
+        <!-- Sección de Gestión de Usuario -->
+        <section class="content-section">
+          <div class="section-header">
+            <h2>Gestión de Usuario</h2>
+            <button id="btn-nuevo-Usuario" class="btn btn-primario">
+              + Nuevo Usuario
+            </button>
+          </div>
+          <div class="table-container">
+            <table id="users-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Rol</th>
+                  <th style="text-align: right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Las filas se generarán con JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- SECCIÓN GESTIÓN DE EMPLEADOS                                     -->
+        <!-- ==================================================================== -->
+        <section class="content-section">
+          <details class="tutorial">
+            <summary>Aclaración sobre la Gestión de Empleados</summary>
+            <div class="tutorial-content">
+              <p>Esta sección te permite llevar un registro básico de tus empleados, sus funciones y sueldos. Esta
+                información es para control interno y puede ser utilizada en futuros reportes de rentabilidad.</p>
+            </div>
+          </details>
+          <div class="section-header">
+            <h2>Gestión de Empleados</h2>
+            <button id="btn-nuevo-empleado" class="btn btn-primario">Nuevo Empleado</button>
+          </div>
+          <div id="empleados-container" class="grid-container">
+            <!-- Las tarjetas de empleados se cargarán aquí -->
+          </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- SECCIÓN GASTOS FIJOS                                             -->
+        <!-- ==================================================================== -->
+        <section class="content-section">
+          <details class="tutorial">
+            <summary>Aclaración sobre los Gastos Fijos</summary>
+            <div class="tutorial-content">
+              <p>Registra aquí todos tus gastos mensuales recurrentes. Esto es fundamental para que el sistema pueda
+                calcular la rentabilidad neta de tu negocio en los reportes del Dashboard.</p>
+              <ul>
+                <li>Ingresa un nombre descriptivo (ej: "Alquiler Local", "Luz EPEC").</li>
+                <li>Ingresa el monto mensual estimado o exacto.</li>
+              </ul>
+            </div>
+          </details>
+          <h2>Gastos Fijos Mensuales</h2>
+          <div id="gastos-fijos-container">
+            <!-- La lista de gastos se cargará aquí -->
+          </div>
+          <form id="gasto-fijo-form" class="inline-form">
+            <input type="text" id="gasto-nombre" placeholder="Nombre del Gasto (ej: Luz)" required>
+            <input type="number" id="gasto-monto" placeholder="Monto Mensual" step="0.01" required>
+            <button type="submit" class="btn btn-secundario">Agregar Gasto</button>
+          </form>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- SECCIÓN MÓDULOS ADICIONALES                                      -->
+        <!-- ==================================================================== -->
+        <section class="content-section">
+          <h2>Módulos Adicionales</h2>
+          <div class="module-toggle">
+            <label for="facturacion-toggle">Módulo de Facturación AFIP</label>
+            <!-- 🟢 CAMBIO: Se usa un checkbox estilizado -->
+            <div class="checkbox-control">
+              <input type="checkbox" id="facturacion-toggle">
+              <label for="facturacion-toggle"></label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sección de Información del Negocio -->
+        <section class="content-section">
+          <h2>Información del Negocio y Ticket</h2>
+          <form id="business-info-form">
+            <div class="form-grid-2">
+              <div>
+                <div class="form-campo">
+                  <label for="business-name">Nombre del Negocio</label>
+                  <input type="text" id="business-name" placeholder="Mi Tienda" />
+                </div>
+                <div class="form-campo">
+                  <label for="business-slogan">Slogan o Mensaje secundario</label>
+                  <input type="text" id="business-slogan" placeholder="Calidad y buen precio" />
+                </div>
+                <div class="form-campo">
+                  <label for="ticket-footer">Mensaje al pie del Ticket</label>
+                  <textarea id="ticket-footer" rows="3" placeholder="¡Gracias por su compra!"></textarea>
+                </div>
+                <div class="form-campo">
+                  <label for="logo-upload">Logotipo del Negocio (PNG o JPG)</label>
+                  <input type="file" id="logo-upload" accept="image/png, image/jpeg" />
+                </div>
+              </div>
+              <div class="ticket-preview-container">
+                <h4>Vista Previa del Ticket</h4>
+                <div class="ticket-preview">
+                  <div class="ticket-header">
+                    <img id="preview-logo" src="" alt="Logo" style="display: none" />
+                    <div id="preview-name" class="ticket-business-name">Nombre del Negocio</div>
+                    <div id="preview-slogan" class="ticket-slogan">Slogan del Negocio</div>
+                  </div>
+                  <div class="ticket-body">
+                    <p>--------------------------------</p>
+                    <p>PRODUCTO EJEMPLO</p>
+                    <p>1 x $1500.00 = $1500.00</p>
+                    <p>--------------------------------</p>
+                    <p class="ticket-total">TOTAL: $1500.00</p>
+                  </div>
+                  <div id="preview-footer" class="ticket-footer">¡Gracias por su compra!</div>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primario">Guardar Información</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Sección de Hardware -->
+        <!-- ==================================================================== -->
+        <!-- SECCIÓN HARDWARE Y PERIFÉRICOS (CON TUTORIAL)                      -->
+        <!-- ==================================================================== -->
+        <section class="content-section">
+          <h2>Hardware y Periféricos</h2>
+
+          <!-- ✅ INICIO: TUTORIAL AÑADIDO -->
+          <details class="tutorial">
+            <summary><strong>GUÍA:</strong> ¿El escáner o la impresora no funcionan?</summary>
+            <div class="tutorial-content">
+              <p>Configurar el hardware correctamente es clave. Sigue estos pasos si encuentras problemas.</p>
+
+              <h4>Configuración del Escáner de Códigos de Barras</h4>
+              <ol>
+                <li><strong>Modo Emulación de Teclado (Keyboard Wedge):</strong> La mayoría de los escáneres USB
+                  funcionan "de caja" simulando ser un teclado. Si tu escáner no escribe el código en un bloc de notas,
+                  es probable que no esté en este modo.</li>
+                <li><strong>Configuración Inicial:</strong> A veces, el lector de códigos de barras necesita una
+                  configuración inicial para funcionar correctamente (ej: para leer ciertos tipos de códigos, añadir un
+                  "Enter" al final, etc.).</li>
+                <li>
+                  <strong>¿Cómo se configura?:</strong> Esta configuración se realiza escaneando una serie de códigos de
+                  barras especiales que vienen en el <strong>manual de usuario</strong> del dispositivo.
+                  <ul>
+                    <li>Busca el manual físico que vino con tu escáner.</li>
+                    <li>Si no lo tienes, busca en internet el manual en PDF con el <strong>nombre completo, marca y
+                        modelo</strong> de tu lector (ej: "Manual PDF Symbol LS2208").</li>
+                    <li>Dentro del manual, busca secciones como "Configuración de Interfaz", "Interface Settings" o
+                      "Suffix Settings" para encontrar los códigos de barras de configuración.</li>
+                  </ul>
+                </li>
+              </ol>
+
+              <h4>Configuración de la Impresora de Tickets (Ticketera)</h4>
+              <ol>
+                <li><strong>Instalar los Drivers:</strong> Este es el paso más importante. Antes de que el sistema pueda
+                  ver la impresora, debes instalar el software (drivers) que el fabricante proporciona.
+                  <ul>
+                    <li>Busca en internet "drivers para [Marca y Modelo de tu impresora]" (ej: "drivers Epson
+                      TM-T20II").</li>
+                    <li>Descarga el instalador desde la página oficial del fabricante y ejecútalo.</li>
+                  </ul>
+                </li>
+                <li><strong>Reiniciar la PC:</strong> Después de instalar los drivers, es <strong>muy importante
+                    reiniciar tu computadora</strong> para que los cambios se apliquen correctamente.</li>
+                <li><strong>Seleccionar en el Sistema:</strong> Una vez reiniciada la PC, vuelve a esta pantalla, haz
+                  clic en el botón <strong>"Refrescar Puertos"</strong> y tu impresora debería aparecer en la lista
+                  desplegable "Impresora de Tickets".</li>
+                <li><strong>Guardar la Selección:</strong> No olvides seleccionarla en la lista y hacer clic en
+                  <strong>"Guardar Hardware"</strong>.
+                </li>
+              </ol>
+            </div>
+          </details>
+          <!-- ✅ FIN: TUTORIAL AÑADIDO -->
+
+          <form id="hardware-config-form">
+            <div class="form-grid-2">
+              <div class="form-campo">
+                <label for="scanner-port">Puerto del Escáner de Códigos</label>
+                <select id="scanner-port">
+                  <option value="">-- No seleccionado --</option>
+                </select>
+                <small>Generalmente no es necesario para escáneres USB que emulan un teclado.</small>
+              </div>
+              <div class="form-campo">
+                <label for="printer-name">Impresora de Tickets</label>
+                <select id="printer-name">
+                  <option value="">-- No seleccionada --</option>
+                </select>
+                <small>Asegúrate de haber instalado los drivers primero.</small>
+              </div>
+            </div>
+            <div class="form-actions">
+              <!-- ✅ NUEVO BOTÓN DE PRUEBA AÑADIDO -->
+              <button type="button" id="btn-test-print" class="btn btn-warning">Imprimir Página de Prueba</button>
+              <button type="button" id="btn-refresh-ports" class="btn btn-secundario">Refrescar Puertos</button>
+              <button type="submit" class="btn btn-primario">Guardar Hardware</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Sección de Parámetros Financieros -->
+        <section class="content-section">
+          <h2>Parámetros Financieros</h2>
+          <form id="general-config-form">
+            <div class="form-grid-2">
+              <div class="form-campo">
+                <label for="recargo-credito">Recargo por Pago con Crédito (%)</label>
+                <input type="number" step="0.01" id="recargo-credito" placeholder="Ej: 15" />
+                <small>Ingresa el porcentaje sin el símbolo %. Ej: 15 para 15%.</small>
+              </div>
+              <div class="form-campo">
+                <label for="descuento-efectivo">Descuento por Pago en Efectivo (%)</label>
+                <input type="number" step="0.01" id="descuento-efectivo" placeholder="Ej: 10" />
+                <small>Este descuento se suma al del cliente.</small>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primario">Guardar Parámetros</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- En: admin.html -->
+        <!-- ==================================================================== -->
+        <!-- SECCIÓN MERCADO PAGO (CON TUTORIAL FINAL PARA USUARIO)               -->
+        <!-- ==================================================================== -->
+        <section class="content-section">
+          <h2>Credenciales de Mercado Pago</h2>
+          <form id="mp-config-form">
+
+            <details class="tutorial">
+              <summary><strong>GUÍA PASO A PASO:</strong> ¿Cómo obtener mis credenciales?</summary>
+              <div class="tutorial-content">
+                <p>Configurar Mercado Pago es un proceso que se hace una sola vez. Sigue estos pasos con atención.</p>
+
+                <h4>Paso 1: Obtener Credenciales Básicas</h4>
+                <ol>
+                  <li>Haz clic aquí para ir al <a href="https://www.mercadopago.com.ar/developers/panel/app/list"
+                      target="_blank">Panel de Desarrolladores de Mercado Pago</a> e inicia sesión.</li>
+                  <li>Haz clic en <strong>"Crear aplicación"</strong>. Dale un nombre (ej: "Mi Sistema TPV La
+                    Macelleria") y acepta los términos.</li>
+                  <li>Dentro de tu nueva aplicación, ve a la sección <strong>"Credenciales de Producción"</strong> y
+                    actívalas.</li>
+                  <li>Copia los siguientes dos datos y pégalos en los campos de abajo:
+                    <ul>
+                      <li>El <strong>Access Token</strong> (empieza con <code>APP_USR-...</code>)</li>
+                      <li>El <strong>User ID</strong> (un número largo, es tu ID de vendedor)</li>
+                    </ul>
+                  </li>
+                </ol>
+
+                <h4>Paso 2: Activar Permisos de la API (¡Muy Importante!)</h4>
+                <ol>
+                  <li>En la misma página de tu aplicación, busca la sección "Detalles de aplicación" y haz clic en el
+                    botón azul <strong>"Editar"</strong>.</li>
+                  <li>Desplázate hacia abajo hasta encontrar la sección <strong>"Permisos de la aplicación"</strong>.
+                  </li>
+                  <li>Marca las casillas de los siguientes permisos. Son necesarios para que el sistema pueda crear y
+                    gestionar cobros:
+                    <ul>
+                      <li>✅ <code>write_stores</code> (para administrar tiendas)</li>
+                      <li>✅ <code>pos_write</code> (para administrar cajas)</li>
+                      <li>✅ <code>offline_access</code> (para que la conexión no expire)</li>
+                      <li>✅ <code>payments</code> (para gestionar pagos)</li>
+                    </ul>
+                  </li>
+                  <li>Al final de la página, haz clic en el botón <strong>"Guardar cambios"</strong>.</li>
+                </ol>
+
+                <h4>Paso 3: Renovar Token y Cargar Cajas</h4>
+                <ol>
+                  <li>Vuelve a la pestaña de <strong>"Credenciales de Producción"</strong>.</li>
+                  <li>Haz clic en el botón <strong>"Renovar mis credenciales"</strong>. Esto es
+                    <strong>obligatorio</strong> para que tu Access Token obtenga los nuevos permisos.
+                  </li>
+                  <li>Copia el <strong>NUEVO</strong> Access Token que aparecerá y pégalo de nuevo en el campo "Access
+                    Token" de abajo, reemplazando el viejo.</li>
+                  <li>Con las credenciales actualizadas, haz clic en el botón de abajo que dice <strong>"Verificar y
+                      Cargar Cajas"</strong>. El sistema se conectará a Mercado Pago y listará tus cajas disponibles.
+                  </li>
+                </ol>
+
+                <h4>Paso 4: Guardar Configuración Final</h4>
+                <ol>
+                  <li>Una vez cargadas, <strong>selecciona la caja</strong> que deseas usar en este sistema desde el
+                    menú desplegable.</li>
+                  <li>Finalmente, haz clic en el botón <strong>"Guardar Credenciales MP"</strong>.</li>
+                </ol>
+                <p><strong>¡Listo!</strong> Tu sistema ya está configurado para recibir pagos con QR.</p>
+              </div>
+            </details>
+
+            <div class="form-campo">
+              <label for="mp-access-token">Access Token</label>
+              <input type="password" id="mp-access-token" placeholder="Pégalo aquí desde el Paso 1" />
+            </div>
+            <div class="form-campo">
+              <label for="mp-user-id">User ID</label>
+              <input type="text" id="mp-user-id" placeholder="Pégalo aquí desde el Paso 1" />
+            </div>
+
+            <div class="form-actions" style="justify-content: flex-start; margin-bottom: 1rem;">
+              <button type="button" id="btn-verify-mp" class="btn btn-secundario">Verificar y Cargar Cajas</button>
+            </div>
+
+            <div class="form-campo">
+              <label for="mp-pos-id">Caja (Punto de Venta)</label>
+              <select id="mp-pos-id" required>
+                <option value="">-- Completa los pasos anteriores --</option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primario">Guardar Credenciales MP</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Sección de Balanza -->
+        <section class="content-section">
+          <h2>Formato de Código de Barras (Balanza)</h2>
+          <form id="balanza-config-form">
+            <p class="form-description">
+              Usa esta herramienta visual para enseñarle al sistema cómo leer los códigos de barras de tus productos
+              pesables.
+            </p>
+            <div class="visualizador-container">
+              <label>Visualizador de Formato:</label>
+              <div id="formato-visualizador" class="formato-visualizador">
+                <span id="vis-prefijo" class="parte-prefijo">20</span>
+                <span id="vis-codigo" class="parte-codigo">CCCCC</span>
+                <span id="vis-valor" class="parte-valor">VVVVV</span>
+                <span id="vis-digito" class="parte-digito">D</span>
+              </div>
+              <div class="visualizador-leyenda">
+                <div><span class="leyenda-caja parte-prefijo"></span> Prefijo</div>
+                <div><span class="leyenda-caja parte-codigo"></span> Código Producto (PLU)</div>
+                <div><span class="leyenda-caja parte-valor"></span> Valor (Peso/Precio)</div>
+                <div><span class="leyenda-caja parte-digito"></span> Dígito Verificador</div>
+              </div>
+              <div id="visualizador-resultado" class="visualizador-resultado"></div>
+            </div>
+            <div class="form-grid-3">
+              <div class="form-campo">
+                <label for="balanza-prefijo">1. Prefijo del Código</label>
+                <input type="text" id="balanza-prefijo" placeholder="Ej: 20" />
+                <small>Los primeros dígitos que identifican un código de balanza.</small>
+              </div>
+              <div class="form-campo">
+                <label for="balanza-tipo-valor">2. ¿Qué representa el Valor?</label>
+                <select id="balanza-tipo-valor">
+                  <option value="peso">El Peso del producto</option>
+                  <option value="precio">El Precio final del producto</option>
+                </select>
+                <small>Elige si el código contiene el peso o el precio.</small>
+              </div>
+              <div class="form-campo">
+                <label for="balanza-valor-divisor">3. Divisor del Valor</label>
+                <input type="number" id="balanza-valor-divisor" readonly />
+                <small>Se ajusta automáticamente según el tipo de valor.</small>
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <fieldset>
+                <legend>4. Parte del Código de Producto</legend>
+                <div class="form-campo">
+                  <label>Posición de Inicio</label>
+                  <input type="number" id="balanza-codigo-inicio" placeholder="Ej: 3" />
+                </div>
+                <div class="form-campo">
+                  <label>Nº de dígitos (Longitud)</label>
+                  <input type="number" id="balanza-codigo-longitud" placeholder="Ej: 5" />
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>5. Parte del Valor</legend>
+                <div class="form-campo">
+                  <label>Posición de Inicio</label>
+                  <input type="number" id="balanza-valor-inicio" placeholder="Ej: 8" />
+                </div>
+                <div class="form-campo">
+                  <label>Nº de dígitos (Longitud)</label>
+                  <input type="number" id="balanza-valor-longitud" placeholder="Ej: 5" />
+                </div>
+              </fieldset>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primario">Guardar Configuración de Balanza</button>
+            </div>
+          </form>
+        </section>
+        <!-- ==================================================================== -->
+        <!-- 🟢 INICIO: SECCIÓN CONFIGURACIÓN AFIP                               -->
+        <!-- ==================================================================== -->
+        <section id="afip-section" class="content-section">
+          <h2>Configuración de Facturación AFIP</h2>
+          <form id="afip-config-form">
+            <details class="tutorial">
+              <summary>¿Cómo obtengo los archivos de Certificado y Clave?</summary>
+              <div class="tutorial-content">
+                <p>Para facturar electrónicamente, necesitas un <strong>Certificado Digital</strong> y una <strong>Clave
+                    Privada</strong> generados para tu CUIT. Este es un proceso técnico que generalmente realiza un
+                  contador o tú mismo siguiendo una guía oficial de AFIP.</p>
+                <h4>Pasos Generales:</h4>
+                <ol>
+                  <li><strong>Generar Clave Privada y CSR:</strong> Usando una herramienta como OpenSSL, se genera un
+                    archivo <code>private.key</code> (tu clave, ¡guárdala bien!) y un <code>request.csr</code> (una
+                    solicitud).</li>
+                  <li><strong>Enviar CSR a AFIP:</strong> Desde el portal de AFIP con tu Clave Fiscal, en el servicio
+                    "Administrador de Certificados Digitales", envías el archivo <code>request.csr</code>.</li>
+                  <li><strong>Descargar Certificado de AFIP:</strong> AFIP te devolverá un archivo de certificado,
+                    generalmente con extensión <code>.crt</code>.</li>
+                </ol>
+                <p>Una vez que tengas los archivos <code>private.key</code> y <code>nombre_de_tu_empresa.crt</code>,
+                  debes seleccionarlos en los campos de abajo.</p>
+              </div>
+            </details>
+
+            <div class="form-grid-2">
+              <div class="form-campo">
+                <label for="afip-cuit">CUIT del Emisor</label>
+                <input type="number" id="afip-cuit" placeholder="Ej: 20123456789" required />
+                <small>Ingresa el CUIT sin guiones.</small>
+              </div>
+              <div class="form-campo">
+                <label for="afip-pto-vta">Punto de Venta</label>
+                <input type="number" id="afip-pto-vta" placeholder="Ej: 1" required />
+                <small>El número de punto de venta que darás de alta en AFIP.</small>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-campo">
+                <label for="afip-cert-file">Archivo de Certificado (.crt)</label>
+                <input type="file" id="afip-cert-file" accept=".crt">
+                <span id="cert-file-path" class="file-path-display">No seleccionado</span>
+              </div>
+              <div class="form-campo">
+                <label for="afip-key-file">Archivo de Clave Privada (.key)</label>
+                <input type="file" id="afip-key-file" accept=".key">
+                <span id="key-file-path" class="file-path-display">No seleccionado</span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primario">Guardar Configuración AFIP</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ✅ INICIO: SECCIÓN GESTIÓN DE CAJA (MODIFICADA) -->
+        <section class="content-section">
+          <h2>Gestión de Caja (Arqueo)</h2>
+          <form id="arqueo-config-form">
+            <details class="tutorial">
+              <summary>¿Cómo funciona el Arqueo de Caja?</summary>
+              <div class="tutorial-content">
+                <p>Al habilitar esta opción, el sistema requerirá que un cajero realice una "Apertura de Caja" antes de
+                  poder registrar ventas. En ese momento, deberá ingresar el monto de dinero inicial (cambio).</p>
+                <p>Al final del turno, el cajero deberá realizar un "Cierre de Caja", donde el sistema calculará los
+                  totales y permitirá imprimir un resumen detallado del turno (arqueo).</p>
+                <p>Los horarios de los turnos son informativos y pueden usarse en el futuro para recordatorios
+                  automáticos.</p>
+              </div>
+            </details>
+            <div class="module-toggle">
+              <label for="arqueo-toggle">Habilitar Apertura y Cierre de Caja</label>
+              <div class="checkbox-control">
+                <input type="checkbox" id="arqueo-toggle">
+                <label for="arqueo-toggle"></label>
+              </div>
+            </div>
+
+            <div id="horarios-arqueo-container" style="display: none; margin-top: 1.5rem;"> <!-- Inicia oculto -->
+              <fieldset>
+                <legend>Turno Mañana</legend>
+                <div class="form-grid-2">
+                  <div class="form-campo">
+                    <label for="horario-apertura-t1">Horario de Apertura</label>
+                    <input type="time" id="horario-apertura-t1">
+                  </div>
+                  <div class="form-campo">
+                    <label for="horario-cierre-t1">Horario de Cierre</label>
+                    <input type="time" id="horario-cierre-t1">
+                  </div>
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Turno Tarde</legend>
+                <div class="form-grid-2">
+                  <div class="form-campo">
+                    <label for="horario-apertura-t2">Horario de Apertura</label>
+                    <input type="time" id="horario-apertura-t2">
+                  </div>
+                  <div class="form-campo">
+                    <label for="horario-cierre-t2">Horario de Cierre</label>
+                    <input type="time" id="horario-cierre-t2">
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primario">Guardar Configuración de Caja</button>
+            </div>
+          </form>
+        </section>
+        <!-- ✅ FIN: NUEVA SECCIÓN PARA GESTIÓN DE CAJA -->
+       <!-- ==================================================================== -->
+<!-- SECCIÓN: Conexión y Gestión de Balanzas Kretz                       -->
+<!-- ==================================================================== -->
+<section class="content-section">
+  <h2>Balanzas Kretz (Wi-Fi / Bluetooth)</h2>
+
+  <details class="tutorial">
+    <summary>Cómo conectar una balanza Kretz</summary>
+    <div class="tutorial-content">
+      <ul>
+        <li>Wi-Fi (TCP): configurá la IP y puerto de la balanza (ej: 192.168.0.50:8000).</li>
+        <li>Bluetooth (SPP): emparejá en Windows y copiá la dirección (ej: <code>00:1A:7D:DA:71:13</code>).</li>
+        <li>El protocolo por defecto es <strong>Kretz Report</strong> (ASCII).</li>
+      </ul>
+    </div>
+  </details>
+
+  <form id="scale-config-form">
+    <div class="form-grid-3">
+      <div class="form-campo">
+        <label>Transporte</label>
+        <select id="scale-transport">
+          <option value="tcp">Wi-Fi / Ethernet (TCP)</option>
+          <option value="bt">Bluetooth (SPP)</option>
+        </select>
+      </div>
+
+      <div class="form-campo only-tcp">
+        <label>IP</label>
+        <input type="text" id="scale-ip" placeholder="192.168.0.50">
+      </div>
+
+      <div class="form-campo only-tcp">
+        <label>Puerto</label>
+        <input type="number" id="scale-port" placeholder="8000" value="8000">
+      </div>
+
+      <div class="form-campo only-bt" style="display:none;">
+        <label>Dirección BT</label>
+        <input type="text" id="scale-bt-address" placeholder="00:1A:7D:DA:71:13">
+      </div>
+
+      <div class="form-campo">
+        <label>Protocolo</label>
+        <select id="scale-protocol">
+          <option value="kretz-report">Kretz Report</option>
+        </select>
+      </div>
+
+      <div class="form-campo">
+        <label>Timeout (ms)</label>
+        <input type="number" id="scale-timeout" value="4000">
+      </div>
+    </div>
+
+    <div class="form-actions" style="gap:.5rem;">
+      <button type="button" id="btn-scale-test" class="btn btn-secundario">Probar Conexión</button>
+      <button type="submit" class="btn btn-primario">Guardar Configuración</button>
+    </div>
+  </form>
+
+  <hr style="margin:1rem 0;"/>
+
+  <h3>Gestión rápida de PLUs</h3>
+  <form id="scale-plu-form" class="inline-form" style="gap:.5rem;flex-wrap:wrap;">
+    <input type="number" id="plu-code" placeholder="PLU (p.ej. 1234)" required>
+    <input type="text"   id="plu-name" placeholder="Nombre (máx 24)" maxlength="24" required>
+    <input type="number" id="plu-price" placeholder="Precio (centavos) ej: 15999" required>
+    <input type="number" id="plu-tare" placeholder="Tara (gramos) ej: 0" value="0">
+    <div class="form-actions" style="gap:.5rem;">
+      <button type="button" id="btn-scale-upsert" class="btn btn-primario">Crear/Actualizar</button>
+      <button type="button" id="btn-scale-delete" class="btn btn-danger">Eliminar</button>
+    </div>
+  </form>
+
+  <!-- Debajo de <h3>Gestión rápida de PLUs</h3> -->
+<form id="scale-plu-form" class="inline-form" style="gap:.5rem;flex-wrap:wrap;">
+  <input type="number" id="plu-code" placeholder="PLU (p.ej. 1234)" required>
+  <input type="text"   id="plu-name" placeholder="Nombre (máx 24)" maxlength="24" required>
+  <input type="number" id="plu-price" placeholder="Precio (centavos) ej: 15999" required>
+  <input type="number" id="plu-tare" placeholder="Tara (gramos) ej: 0" value="0">
+
+  <!-- NUEVO: Código de barras editable -->
+  <input type="text" id="plu-barcode" placeholder="Código de barras (opcional)">
+  <label style="display:flex;gap:.5rem;align-items:center;">
+    <input type="checkbox" id="barcode-auto" checked>
+    Generar código automáticamente según formato de balanza
+  </label>
+  <div id="barcode-preview" style="font-family:monospace;opacity:.85;"></div>
+
+  <div class="form-actions" style="gap:.5rem;">
+    <button type="button" id="btn-scale-upsert" class="btn btn-primario">Crear/Actualizar</button>
+    <button type="button" id="btn-scale-delete" class="btn btn-danger">Eliminar</button>
+  </div>
+</form>
+
+
+  <div class="form-actions" style="margin-top:.5rem;">
+    <button type="button" id="btn-scale-sync-all" class="btn btn-warning">Sincronizar Catálogo Completo → Balanza</button>
+  </div>
+</section>
+
+       
+        <!-- ==================================================================== -->
+        <!-- SECCIÓN SINCRONIZACIÓN Y SUSCRIPCIÓN                               -->
+        <!-- ==================================================================== -->
+        <section class="content-section">
+          <h2>Sincronización en la Nube y Suscripción</h2>
+
+          <details class="tutorial">
+            <summary>¿Cómo funciona la sincronización y la suscripción?</summary>
+            <div class="tutorial-content">
+              <p>
+                La sincronización en la nube y las copias de seguridad forman parte de las
+                <strong>funciones premium</strong> del sistema. Para utilizarlas necesitás una
+                <strong>suscripción activa</strong>.
+              </p>
+
+              <h4>¿Qué incluye?</h4>
+              <ul>
+                <li>Respaldo automático de tus datos en la nube.</li>
+                <li>Sincronización entre múltiples equipos/puestos.</li>
+                <li>Restauración ante fallos o pérdida del equipo.</li>
+                <li>Acceso remoto a catálogos, ventas y estadísticas.</li>
+              </ul>
+
+              <h4>Cómo activarlo (paso a paso)</h4>
+              <ol>
+                <li>
+                  Contratá una suscripción en
+                  <a href="https://www.sitiowebejemplo.com" target="_blank" rel="noopener">www.sitiowebejemplo.com</a>.
+                </li>
+                <li>
+                  Vas a recibir tu <strong>Token de Licencia</strong> (también visible en tu panel del sitio).
+                </li>
+                <li>
+                  Pegá el token en <em>Token de Licencia</em> y completá la <em>URL de la API</em>
+                  (por defecto: <code>https://servidor-api-ventasimple-production.up.railway.app</code>).
+                </li>
+                <li>
+                  Activá <em>Sincronización</em> y presioná <em>Guardar Configuración de Sincronización</em>.
+                </li>
+                <li>
+                  El sistema validará la licencia y mostrará el <em>Estado de la Suscripción</em> debajo.
+                </li>
+              </ol>
+
+              <h4>Notas importantes</h4>
+              <ul>
+                <li>Se requiere conexión a Internet para validar la licencia y sincronizar.</li>
+                <li>Si pasan <strong>72 horas</strong> sin poder validar la suscripción, el sistema puede bloquear
+                  las funciones premium hasta reconectar.</li>
+                <li>El <em>Token de Licencia</em> es sensible: no lo compartas ni lo publiques.</li>
+                <li>Si desactivás la sincronización, la app sigue funcionando de forma local (sin funciones premium).
+                </li>
+              </ul>
+            </div>
+          </details>
+
+          <form id="sync-config-form">
+            <div class="form-grid-2">
+              <div class="form-campo">
+                <label for="license-key">Token de Licencia</label>
+                <input type="text" id="license-key" placeholder="Ej: 6f1b2c8e-...." />
+                <small>No compartas este token.</small>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-campo">
+                <label for="sync-api-url">URL de la API</label>
+                <input type="url" id="sync-api-url" placeholder="https://tu-servidor-api.com" />
+                <small>Por defecto: <code>https://servidor-api-ventasimple-production.up.railway.app</code></small>
+              </div>
+
+              <div class="module-toggle">
+                <label for="sync-enabled-toggle">Activar Sincronización</label>
+                <div class="checkbox-control">
+                  <input type="checkbox" id="sync-enabled-toggle" />
+                  <label for="sync-enabled-toggle"></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-campo">
+              <label>Estado de la Suscripción</label>
+              <div id="subscription-status-display" class="status-display">
+                Cargando...
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primario">
+                Guardar Configuración de Sincronización
+              </button>
+            </div>
+
+            <p class="form-help" style="margin-top: .75rem;">
+              ¿Necesitás ayuda? Visitá
+              <a href="https://www.sitiowebejemplo.com" target="_blank" rel="noopener">
+                www.sitiowebejemplo.com
+              </a>.
+            </p>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- MODALES ESTANDARIZADOS                                               -->
+  <!-- ==================================================================== -->
+
+  <!-- Modal para crear/editar EMPLEADO -->
+  <div id="empleado-modal" class="modal">
+    <div class="modal-content">
+      <h2 id="empleado-modal-title">Nuevo Empleado</h2>
+      <form id="empleado-form">
+        <input type="hidden" id="empleado-id">
+        <div class="form-campo">
+          <label for="empleado-nombre">Nombre Completo</label>
+          <input type="text" id="empleado-nombre" required>
+        </div>
+        <div class="form-campo">
+          <label for="empleado-funcion">Función / Puesto</label>
+          <input type="text" id="empleado-funcion" placeholder="Ej: Cajero, Repositor">
+        </div>
+        <div class="form-campo">
+          <label for="empleado-sueldo">Sueldo Mensual ($)</label>
+          <input type="number" id="empleado-sueldo" step="0.01" required>
+        </div>
+        <div class="form-actions">
+          <button type="button" id="btn-cancelar-empleado" class="btn btn-secundario">Cancelar</button>
+          <button type="submit" class="btn btn-primario">Guardar Empleado</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para crear/editar Usuario -->
+  <div id="user-modal" class="modal">
+    <div class="modal-content">
+      <h2 id="modal-title">Nuevo Usuario</h2>
+      <form id="user-form">
+        <input type="hidden" id="user-id" />
+        <div class="form-campo">
+          <label for="nombre">Nombre de Usuario</label>
+          <input type="text" id="nombre" required />
+        </div>
+        <div class="form-campo">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" />
+          <small>Dejar en blanco para no cambiar la contraseña existente.</small>
+        </div>
+        <div class="form-campo">
+          <label for="rol">Rol</label>
+          <select id="rol" required>
+            <option value="cajero">Cajero</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </div>
+        <fieldset id="permisos-fieldset">
+          <legend>Permisos de Módulos (para Cajeros)</legend>
+          <div id="permisos-container" class="permisos-grid"></div>
+        </fieldset>
+        <div class="form-actions">
+          <button type="button" id="btn-cancelar" class="btn btn-secundario">Cancelar</button>
+          <button type="submit" class="btn btn-primario">Guardar Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/navbar-loader.js"></script>
+  <script src="../js/admin.js"></script>
+  <div id="toast-notification" class="toast"></div>
+  <script src="../js/subscription.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Transacciones de Mercado Pago</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/navbar.css" />
+    <link rel="stylesheet" href="../css/mp_transactions.css">
+</head>
+<body>
+    <div class="container">
+       <!-- ✅ INICIO: BLOQUE DE CARGA SÍNCRONA CON DIAGNÓSTICO AVANZADO -->
+<!-- ✅ INICIO: BLOQUE DE CARGA SÍNCRONA (VERSIÓN FINAL) -->
+<aside id="sidebar-placeholder" class="sidebar"></aside>
+        
+        <main class="main-content">
+           
+
+            <!-- Contenedor unificado tipo "card" -->
+            <div class="card"> 
+                
+                <header>
+                <h1>Transacciones de Mercado Pago</h1>
+            </header>
+                            <h1 style="height: 25px;"></h1>
+
+                <div class="filter-container">
+                    <form id="filter-form">
+                        <div class="form-field">
+                            <label for="range">Rango de Fechas</label>
+                            <select id="range" name="range">
+                                <option value="today">Hoy</option>
+                                <option value="last7days">Últimos 7 días</option>
+                                <option value="last30days">Últimos 30 días</option>
+                                <option value="all" selected>Siempre</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="status">Estado</label>
+                            <select id="status" name="status">
+                                <option value="">Todos</option>
+                                <option value="approved">Aprobado</option>
+                                <option value="pending">Pendiente</option>
+                            </select>
+                        </div>
+                        <div class="filter-actions">
+                            <button type="submit" class="btn-primario">Filtrar</button>
+                            <button type="button" id="btn-refresh" class="btn-secondary">🔄 Actualizar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container">
+                    <table id="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Pagador</th>
+                                <th>Descripción / Referencia</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Las filas se generarán con JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/navbar-loader.js"></script>
+    <script src="../js/mp_transactions.js"></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Estadísticas y Marketing</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/navbar.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+<aside id="sidebar-placeholder" class="sidebar"></aside>
+
+
+    <main class="main-content">
+      <header class="main-header">
+        <h1>Estadísticas y Marketing</h1>
+      </header>
+
+      <div class="content-body">
+        <!-- Filtros -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <button class="btn btn-filter active" data-range="today">Hoy</button>
+            <button class="btn btn-filter" data-range="week">Esta Semana</button>
+            <button class="btn btn-filter" data-range="month">Este Mes</button>
+          </div>
+          <div class="filter-group">
+            <select id="depto-filter" class="form-control">
+              <option value="">Todos los Departamentos</option>
+            </select>
+            <select id="familia-filter" class="form-control" disabled>
+              <option value="">Todas las Familias</option>
+            </select>
+          </div>
+          <div class="custom-range">
+            <input type="date" id="date-from" />
+            <span>-</span>
+            <input type="date" id="date-to" />
+            <button id="btn-apply-custom" class="btn btn-primario">Aplicar</button>
+          </div>
+          <div class="action-buttons">
+            <button id="btn-export-pdf" class="btn btn-info">📄 Exportar a PDF</button>
+            <a href="rentabilidad.html" class="btn btn-accent">📈 Analizar Rentabilidad</a>
+            <a href="cierres-caja.html" class="btn btn-secundario">📋 Ver Cierres de Caja</a>
+          </div>
+        </div>
+
+        <!-- Tarjetas -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+              <p>Total Facturado</p>
+              <h2 id="total-facturado">$0.00</h2>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">💸</div>
+            <div class="stat-info">
+              <p>Ganancia Bruta</p>
+              <h2 id="ganancia-bruta">$0.00</h2>
+            </div>
+          </div>
+          <div class="stat-card stat-card-expense">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+              <p>Compras Mercadería</p>
+              <h2 id="total-compras">$0.00</h2>
+            </div>
+          </div>
+          <div class="stat-card stat-card-expense">
+            <div class="stat-icon">🔧</div>
+            <div class="stat-info">
+              <p>Gastos Operativos</p>
+              <h2 id="total-gastos">$0.00</h2>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🧾</div>
+            <div class="stat-info">
+              <p>Número de Ventas</p>
+              <h2 id="numero-ventas">0</h2>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-info">
+              <p>Ticket Promedio</p>
+              <h2 id="ticket-promedio">$0.00</h2>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="dashboard-grid">
+          <section class="content-section">
+            <h2>Ventas del Período</h2>
+            <div class="chart-container">
+              <canvas id="ventas-chart"></canvas>
+            </div>
+          </section>
+          <section class="content-section">
+            <h2>Salud del Negocio</h2>
+            <div class="health-gauge-container">
+              <div class="health-gauge">
+                <div class="gauge-body">
+                  <div class="gauge-fill" id="gauge-fill"></div>
+                  <div class="gauge-cover">
+                    <span id="health-score">0%</span>
+                    <small>Saludable</small>
+                  </div>
+                </div>
+              </div>
+              <div class="health-details">
+                <p><strong>Margen:</strong> <span id="health-margin">0%</span></p>
+                <p><strong>Crecimiento:</strong> <span id="health-growth">0%</span></p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="content-section">
+          <h2>🏆 Productos Más Vendidos</h2>
+          <ul id="top-productos-list" class="top-product-list">
+            <li>Cargando...</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script defer src="../js/navbar-loader.js"></script>
+  <script defer src="../js/dashboard.js"></script>
+</body>
+</html>

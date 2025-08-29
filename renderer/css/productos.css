@@ -1,0 +1,247 @@
+/* === 1. Cabecera y Búsqueda === */
+#search-input {
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    width: 300px;
+    font-size: 1em;
+}
+
+/* === 2. Contenedor de la Tabla === */
+.table-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+/* === 3. Estilos Generales de la Tabla === */
+#productos-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+}
+
+/* === 4. Cabecera de la Tabla === */
+#productos-table thead {
+    background-color: #f8f9fa;
+}
+
+#productos-table th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 500;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    white-space: nowrap;
+}
+
+/* === 5. Cuerpo y Filas de la Tabla === */
+#productos-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+#productos-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+#productos-table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* === 6. Celdas === */
+#productos-table td {
+    padding: 12px 15px;
+    vertical-align: middle;
+    color: #212529;
+}
+
+/* === 7. Estilos Específicos === */
+.producto-imagen {
+    width: 45px;
+    height: 45px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+}
+
+.producto-nombre {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.producto-clasificacion {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+/* Badges de estado */
+.estado-activo, .estado-inactivo {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.estado-activo { background-color: #dcfce7; color: #166534; }
+.estado-inactivo { background-color: #fee2e2; color: #991b1b; }
+
+/* Alineaciones por columna */
+#productos-table th:nth-child(n+3),
+#productos-table td:nth-child(n+3) {
+    text-align: right;
+}
+#productos-table th:nth-child(2),
+#productos-table td:nth-child(2) {
+    text-align: left;
+}
+#productos-table th:nth-child(8),
+#productos-table td:nth-child(8) {
+    text-align: center;
+}
+
+.acciones-btn {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* === 8. Modal Producto === */
+.modal {
+    display: flex;
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-contenido {
+    max-width: 750px;
+}
+
+.modal-cuerpo {
+    padding: 1rem 1.5rem;
+}
+
+/* Fieldsets */
+fieldset {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+}
+fieldset legend {
+    font-size: 0.85em;
+    font-weight: 500;
+    padding: 0 0.5rem;
+}
+
+/* Formularios */
+.form-campo {
+    margin-bottom: 0.75rem;
+}
+.form-campo label {
+    margin-bottom: 4px;
+    font-size: 0.9em;
+}
+.form-grid-2 {
+    gap: 1rem;
+}
+
+/* Select + botón '+' */
+.form-campo-con-boton {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.form-campo-con-boton select {
+    flex-grow: 1;
+}
+.btn-add {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+/* Rentabilidad */
+.rentabilidad-box {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: #f8f9fa;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    margin-top: 5px;
+    text-align: center;
+}
+.rentabilidad-box span {
+    font-size: 0.85em;
+}
+.rentabilidad-box strong {
+    color: var(--success-color);
+    font-size: 1em;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Imagen preview */
+.form-campo-imagen-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#imagen-preview {
+    display: block;
+    margin-top: 10px;
+    width: 100px;
+    height: 100px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    object-fit: cover;
+}
+#imagen-preview.imagen-preview-oculta {
+    display: none;
+}
+
+/* === Agrega esto a tu archivo ../css/productos.css === */
+
+/* Contenedor para alinear el select y el form inline verticalmente */
+.form-campo-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Espacio entre el select y el formulario que aparece */
+}
+
+/* Estilo para los formularios que aparecen debajo de los selects */
+.inline-form-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.inline-form-container input {
+    flex-grow: 1; /* El input ocupa el espacio disponible */
+}
+
+.inline-form-container button {
+    flex-shrink: 0; /* Los botones no se encogen */
+    padding: 6px 10px; /* Hacemos los botones un poco más pequeños */
+    font-size: 1rem;
+    line-height: 1;
+}

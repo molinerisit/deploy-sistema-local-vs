@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Licencia requerida</title>
+  <style>
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b1220; color:#e5e7eb; display:grid; place-items:center; height:100vh; }
+    .card { width: 520px; max-width: 92vw; background:#111827; border:1px solid #1f2937; border-radius:14px; padding:22px; box-shadow:0 10px 40px rgba(0,0,0,.5); }
+    h1 { margin:0 0 6px; font-size:20px; }
+    p { margin:8px 0; line-height:1.45; color:#cbd5e1; }
+    .msg { background:#0f172a; border:1px dashed #334155; border-radius:10px; padding:10px 12px; margin-top:10px; white-space:pre-wrap; }
+    .row { display:flex; justify-content:flex-end; margin-top:14px; }
+    button { background:#f59e0b; border:0; color:#111827; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Se requiere una licencia válida</h1>
+    <p>Tu suscripción no pudo verificarse. Ingresá al panel de Administración y configurá tu licencia o conexión.</p>
+    <div id="block-msg" class="msg">…</div>
+    <div class="row">
+      <button onclick="relaunch()">Reintentar</button>
+    </div>
+  </div>
+
+  <script>
+    window.electronAPI?.on?.("block-message", (_evt, msg) => {
+      const el = document.getElementById("block-msg");
+      if (el) el.textContent = msg || "Licencia inválida o sin conexión.";
+    });
+    function relaunch() { window.electronAPI?.send?.("relaunch-app"); }
+  </script>
+</body>
+</html>

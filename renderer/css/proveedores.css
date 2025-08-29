@@ -1,0 +1,26 @@
+/* renderer/css/proveedores.css */
+
+.productos-fieldset {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.productos-fieldset legend {
+    font-weight: bold;
+    padding: 0 10px;
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+}
