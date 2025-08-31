@@ -1,5 +1,7 @@
-// renderer/js/proveedor-form.js (VERSIÓN FINAL CON TOASTS)
-document.addEventListener("app-ready", () => { // Cambiado a app-ready por consistencia
+// renderer/js/proveedor-form.js
+// Optimizado: toasts no invasivos, yields al event loop y escritura liviana.
+
+document.addEventListener("app-ready", () => {
   // --- 1. REFERENCIAS ---
   const proveedorForm = document.getElementById("proveedor-form");
   const formTitulo = document.getElementById("form-titulo");
@@ -10,19 +12,17 @@ document.addEventListener("app-ready", () => { // Cambiado a app-ready por consi
   const inputTelefono = document.getElementById("telefono");
   const inputDiasReparto = document.getElementById("diasReparto");
   const tipoSelect = document.getElementById("proveedor-tipo");
-  const productosCheckboxContainer = document.getElementById(
-    "lista-productos-checkbox"
-  );
-  const insumosCheckboxContainer = document.getElementById(
-    "lista-insumos-checkbox"
-  );
+  const productosCheckboxContainer = document.getElementById("lista-productos-checkbox");
+  const insumosCheckboxContainer = document.getElementById("lista-insumos-checkbox");
   const fieldsetProductos = document.getElementById("fieldset-productos");
   const fieldsetInsumos = document.getElementById("fieldset-insumos");
   const inputLimitePedido = document.getElementById("limitePedido");
 
-  // Referencia al elemento de notificación (toast)
+  // Toast
   const toast = document.getElementById('toast-notification');
   let toastTimer;
+
+  const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
   // --- 2. FUNCIONES ---
   const showNotification = (message, type = "success") => {
@@ -30,11 +30,8 @@ document.addEventListener("app-ready", () => { // Cambiado a app-ready por consi
     clearTimeout(toastTimer);
     toast.textContent = message;
     toast.className = 'toast';
-    toast.classList.add(type);
-    toast.classList.add('visible');
-    toastTimer = setTimeout(() => {
-        toast.classList.remove('visible');
-    }, 3000);
+    toast.classList.add(type, 'visible');
+    toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
   };
 
   const toggleSubmitButtonState = (isLoading) => {
@@ -43,12 +40,11 @@ document.addEventListener("app-ready", () => { // Cambiado a app-ready por consi
       btnSubmit.textContent = isLoading ? "Guardando..." : "Guardar Proveedor";
     }
   };
+
   const actualizarVisibilidadFieldsets = () => {
     const tipo = tipoSelect.value;
-    fieldsetProductos.style.display =
-      tipo === "producto" || tipo === "ambos" ? "block" : "none";
-    fieldsetInsumos.style.display =
-      tipo === "insumos" || tipo === "ambos" ? "block" : "none";
+    fieldsetProductos.style.display = (tipo === "producto" || tipo === "ambos") ? "block" : "none";
+    fieldsetInsumos.style.display  = (tipo === "insumos"  || tipo === "ambos") ? "block" : "none";
   };
 
   const poblarFormulario = (proveedor) => {
@@ -59,20 +55,17 @@ document.addEventListener("app-ready", () => { // Cambiado a app-ready por consi
     inputDiasReparto.value = proveedor.diasReparto || "";
     inputLimitePedido.value = proveedor.limitePedido || "";
     tipoSelect.value = proveedor.tipo;
-    if (proveedor.productoIds) {
+
+    if (proveedor.productoIds?.length) {
       proveedor.productoIds.forEach((id) => {
-        const checkbox = document.querySelector(
-          `#lista-productos-checkbox input[value="${id}"]`
-        );
-        if (checkbox) checkbox.checked = true;
+        const cb = productosCheckboxContainer.querySelector(`input[value="${id}"]`);
+        if (cb) cb.checked = true;
       });
     }
-    if (proveedor.insumoIds) {
+    if (proveedor.insumoIds?.length) {
       proveedor.insumoIds.forEach((id) => {
-        const checkbox = document.querySelector(
-          `#lista-insumos-checkbox input[value="${id}"]`
-        );
-        if (checkbox) checkbox.checked = true;
+        const cb = insumosCheckboxContainer.querySelector(`input[value="${id}"]`);
+        if (cb) cb.checked = true;
       });
     }
     actualizarVisibilidadFieldsets();
@@ -80,38 +73,39 @@ document.addEventListener("app-ready", () => { // Cambiado a app-ready por consi
 
   const inicializarFormulario = async () => {
     try {
-      const { productos, insumos } = await window.electronAPI.invoke(
-        "get-productos-insumos"
-      );
-      productosCheckboxContainer.innerHTML = productos
-        .map(
-          (p) =>
-            `<div class="checkbox-item"><input type="checkbox" id="prod-${p.id}" name="productos" value="${p.id}"><label for="prod-${p.id}">${p.nombre}</label></div>`
-        )
-        .join("");
-      insumosCheckboxContainer.innerHTML = insumos
-        .map(
-          (i) =>
-            `<div class="checkbox-item"><input type="checkbox" id="insumo-${i.id}" name="insumos" value="${i.id}"><label for="insumo-${i.id}">${i.nombre}</label></div>`
-        )
-        .join("");
+      const { productos = [], insumos = [] } = await window.electronAPI.invoke("get-productos-insumos");
+
+      // Render con fragment para reducir reflow
+      const fragP = document.createDocumentFragment();
+      productos.forEach((p) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'checkbox-item';
+        wrap.innerHTML = `<input type="checkbox" id="prod-${p.id}" name="productos" value="${p.id}"><label for="prod-${p.id}">${p.nombre}</label>`;
+        fragP.appendChild(wrap);
+      });
+      productosCheckboxContainer.innerHTML = "";
+      productosCheckboxContainer.appendChild(fragP);
+
+      const fragI = document.createDocumentFragment();
+      insumos.forEach((i) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'checkbox-item';
+        wrap.innerHTML = `<input type="checkbox" id="insumo-${i.id}" name="insumos" value="${i.id}"><label for="insumo-${i.id}">${i.nombre}</label>`;
+        fragI.appendChild(wrap);
+      });
+      insumosCheckboxContainer.innerHTML = "";
+      insumosCheckboxContainer.appendChild(fragI);
 
       const urlParams = new URLSearchParams(window.location.search);
       const proveedorId = urlParams.get("id");
 
       if (proveedorId) {
         formTitulo.textContent = "Editar Proveedor";
-        const proveedor = await window.electronAPI.invoke(
-          "get-proveedor-by-id",
-          proveedorId
-        );
+        const proveedor = await window.electronAPI.invoke("get-proveedor-by-id", proveedorId);
         if (proveedor) {
           poblarFormulario(proveedor);
         } else {
-          showNotification(
-            "Error: No se encontró el proveedor para editar.",
-            "error"
-          );
+          showNotification("No se encontró el proveedor.", "error");
           formTitulo.textContent = "Proveedor no encontrado";
           proveedorForm.style.display = "none";
         }
@@ -121,26 +115,19 @@ document.addEventListener("app-ready", () => { // Cambiado a app-ready por consi
       }
     } catch (error) {
       console.error("Error al inicializar el formulario:", error);
-      showNotification(
-        "Error crítico al cargar los datos del formulario.",
-        "error"
-      );
+      showNotification("Error crítico al cargar datos.", "error");
     }
   };
 
   // --- 3. EVENT LISTENERS ---
-  tipoSelect.addEventListener("change", actualizarVisibilidadFieldsets);
+  tipoSelect.addEventListener("change", actualizarVisibilidadFieldsets, { passive: true });
 
   proveedorForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     toggleSubmitButtonState(true);
 
-    const productoIds = Array.from(
-      productosCheckboxContainer.querySelectorAll("input:checked")
-    ).map((cb) => cb.value);
-    const insumoIds = Array.from(
-      insumosCheckboxContainer.querySelectorAll("input:checked")
-    ).map((cb) => cb.value);
+    const productoIds = Array.from(productosCheckboxContainer.querySelectorAll("input:checked")).map((cb) => cb.value);
+    const insumoIds   = Array.from(insumosCheckboxContainer.querySelectorAll("input:checked")).map((cb) => cb.value);
 
     const proveedorData = {
       nombreEmpresa: inputNombreEmpresa.value.trim(),
@@ -150,27 +137,19 @@ document.addEventListener("app-ready", () => { // Cambiado a app-ready por consi
       limitePedido: inputLimitePedido.value.trim(),
       tipo: tipoSelect.value,
     };
-
-    const idValue = inputId.value;
-    if (idValue) {
-      proveedorData.id = idValue;
-    }
+    if (inputId.value) proveedorData.id = inputId.value;
 
     try {
-      const result = await window.electronAPI.invoke("guardar-proveedor", {
-        proveedorData,
-        productoIds,
-        insumoIds,
-      });
-      if (result.success) {
+      const result = await window.electronAPI.invoke("guardar-proveedor", { proveedorData, productoIds, insumoIds });
+      if (result?.success) {
         showNotification("Proveedor guardado con éxito.");
-        setTimeout(() => {
-          window.location.href = "proveedores.html";
-        }, 1200); // Dar tiempo para leer el toast
+        await nextFrame(); // ceder un frame antes de navegar
+        window.location.href = "proveedores.html";
       } else {
-        showNotification(`Error al guardar: ${result.message}`, "error");
+        showNotification(`Error al guardar: ${result?.message || "Desconocido"}`, "error");
       }
     } catch (error) {
+      console.error(error);
       showNotification("Error inesperado al guardar.", "error");
     } finally {
       toggleSubmitButtonState(false);

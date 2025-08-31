@@ -15,7 +15,7 @@
   // Helper: addEventListener seguro
   const on = (el, ev, fn, opts) => el && el.addEventListener(ev, fn, opts);
 
-  // Toast simple
+  // Toast simple (no bloqueante)
   const toast = (() => {
     let timeout;
     const el = document.getElementById("toast-notification");
@@ -30,6 +30,37 @@
       },
     };
   })();
+
+  // === Confirm modal no bloqueante ===
+  const confirmOverlay = document.createElement("div");
+  confirmOverlay.className = "confirm-overlay";
+  confirmOverlay.innerHTML = `
+    <div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h4 id="confirm-title">Confirmar</h4>
+      <p id="confirm-msg">¿Estás seguro?</p>
+      <div class="confirm-actions">
+        <button type="button" class="btn btn-secundario" data-action="cancelar">Cancelar</button>
+        <button type="button" class="btn btn-danger" data-action="aceptar">Aceptar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(confirmOverlay);
+
+  const confirmar = (mensaje, titulo = "Confirmar") =>
+    new Promise((resolve) => {
+      confirmOverlay.querySelector("#confirm-title").textContent = titulo;
+      confirmOverlay.querySelector("#confirm-msg").textContent = mensaje || "¿Estás seguro?";
+      confirmOverlay.classList.add("visible");
+      const onClick = (ev) => {
+        const action = ev.target?.dataset?.action;
+        if (!action) return;
+        ev.preventDefault();
+        confirmOverlay.classList.remove("visible");
+        confirmOverlay.removeEventListener("click", onClick);
+        resolve(action === "aceptar");
+      };
+      confirmOverlay.addEventListener("click", onClick);
+    });
 
   // Botón loading
   const setBtnLoading = (btn, loading, textWhile = "Procesando...") => {
@@ -81,7 +112,7 @@
     const visValor = document.getElementById("vis-valor");
     const visResultado = document.getElementById("visualizador-resultado");
 
-    // >>> NUEVO: Conexión y gestión Kretz (sección extra de Admin)
+    // Conexión y gestión Kretz (sección extra)
     const scaleConfigForm = document.getElementById("scale-config-form");
     const scaleTransport = document.getElementById("scale-transport");
     const scaleIp = document.getElementById("scale-ip");
@@ -100,7 +131,7 @@
     const btnScaleDelete = document.getElementById("btn-scale-delete");
     const btnScaleSyncAll = document.getElementById("btn-scale-sync-all");
 
-    // >>> NUEVO: Código de barras editable / auto
+    // Código de barras editable / auto
     const pluBarcodeInput = document.getElementById("plu-barcode");
     const barcodeAutoChk = document.getElementById("barcode-auto");
     const barcodePreview = document.getElementById("barcode-preview");
@@ -177,7 +208,7 @@
     let allModules = [];
     let newLogoBase64 = null;
 
-    // >>> NUEVO: cache del formato de balanza para generar códigos
+    // cache del formato de balanza para generar códigos
     let _balanzaFormato = null;
 
     // --- 3. UTIL UI ---
@@ -321,7 +352,7 @@
       }
     };
 
-    // === NUEVO: helpers de código de barras (generación con formato actual) ===
+    // === helpers de código de barras (generación con formato actual) ===
     const luhnMod10 = (numStr) => {
       let sum = 0, dbl = false;
       for (let i = numStr.length - 1; i >= 0; i--) {
@@ -542,7 +573,7 @@
           };
         }
 
-        // >>> NUEVO: Config de conexión de balanza (tcp/bt)
+        // Config de conexión de balanza (tcp/bt)
         if (scaleConfigForm) {
           const sc = config.config_balanza_conexion || {};
           if (scaleTransport) scaleTransport.value = sc.transport || "tcp";
@@ -657,14 +688,14 @@
       }
 
       if (btn.classList.contains("btn-eliminar")) {
-        if (confirm("¿Eliminar este usuario?")) {
-          const result = await ipcInvoke("delete-user", id);
-          if (result?.success) {
-            toast.show("Usuario eliminado.");
-            loadUsers();
-          } else {
-            toast.show(result?.message || "No se pudo eliminar.", "error");
-          }
+        const ok = await confirmar("¿Eliminar este usuario?");
+        if (!ok) return;
+        const result = await ipcInvoke("delete-user", id);
+        if (result?.success) {
+          toast.show("Usuario eliminado.");
+          loadUsers();
+        } else {
+          toast.show(result?.message || "No se pudo eliminar.", "error");
         }
       }
     });
@@ -772,14 +803,14 @@
         empleado ? openEmpleadoModal(empleado) : toast.show("Empleado no encontrado.", "error");
       }
       if (deleteBtn) {
-        if (confirm("¿Eliminar este empleado?")) {
-          const result = await ipcInvoke("delete-empleado", deleteBtn.dataset.id);
-          if (result?.success) {
-            toast.show("Empleado eliminado.");
-            loadEmpleados();
-          } else {
-            toast.show(result?.message || "No se pudo eliminar.", "error");
-          }
+        const ok = await confirmar("¿Eliminar este empleado?");
+        if (!ok) return;
+        const result = await ipcInvoke("delete-empleado", deleteBtn.dataset.id);
+        if (result?.success) {
+          toast.show("Empleado eliminado.");
+          loadEmpleados();
+        } else {
+          toast.show(result?.message || "No se pudo eliminar.", "error");
         }
       }
     });
@@ -808,14 +839,14 @@
     on(gastosContainer, "click", async (e) => {
       const deleteBtn = e.target.closest(".btn-delete-gasto");
       if (deleteBtn) {
-        if (confirm("¿Eliminar este gasto?")) {
-          const result = await ipcInvoke("delete-gasto-fijo", deleteBtn.dataset.id);
-          if (result?.success) {
-            toast.show("Gasto eliminado.");
-            loadGastosFijos();
-          } else {
-            toast.show(result?.message || "No se pudo eliminar.", "error");
-          }
+        const ok = await confirmar("¿Eliminar este gasto?");
+        if (!ok) return;
+        const result = await ipcInvoke("delete-gasto-fijo", deleteBtn.dataset.id);
+        if (result?.success) {
+          toast.show("Gasto eliminado.");
+          loadGastosFijos();
+        } else {
+          toast.show(result?.message || "No se pudo eliminar.", "error");
         }
       }
     });
@@ -899,7 +930,6 @@
         balanzaValorDivisor.value =
           balanzaTipoValor.value === "peso" ? 1000 : 100;
         actualizarVisualizador();
-        // actualizar cache formato y preview de código
         _balanzaFormato = leerConfigBalanza();
         refreshBarcodePreview();
       });
@@ -926,7 +956,7 @@
           const result = await ipcInvoke("save-balanza-config", configData);
           if (result?.success) {
             toast.show("Configuración de balanza guardada.");
-            _balanzaFormato = configData; // refrescamos cache
+            _balanzaFormato = configData;
             refreshBarcodePreview();
           } else {
             toast.show(result?.message || "No se pudo guardar.", "error");
@@ -937,7 +967,7 @@
       });
     }
 
-    // >>> NUEVO: Conexión/gestión Kretz Report LT
+    // Conexión/gestión Kretz Report LT
     if (scaleConfigForm) {
       on(scaleConfigForm, "submit", async (e) => {
         e.preventDefault();
@@ -975,9 +1005,8 @@
       });
     }
 
-    // >>> NUEVO: Form PLU + código de barras
+    // PLU + código de barras
     if (pluForm) {
-      // listeners para preview
       [pluCodeInput, pluPriceInput, barcodeAutoChk, pluBarcodeInput].forEach(
         (el) => el && on(el, "input", refreshBarcodePreview)
       );
@@ -1024,7 +1053,8 @@
       });
 
       on(btnScaleSyncAll, "click", async () => {
-        if (!confirm("Esto enviará todos los productos pesables a la balanza. ¿Continuar?")) return;
+        const ok = await confirmar("Esto enviará todos los productos pesables a la balanza. ¿Continuar?");
+        if (!ok) return;
         try {
           setBtnLoading(btnScaleSyncAll, true, "Sincronizando...");
           const result = await ipcInvoke("scale-sync-all-plu");
@@ -1155,7 +1185,6 @@
           license_key: (licenseKeyInput?.value || "").trim(),
         };
 
-        // Validación rápida
         if (data.sync_enabled && !data.sync_api_url) {
           return toast.show("Ingresá la URL de la API para sincronizar.", "error");
         }

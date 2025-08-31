@@ -1,3 +1,4 @@
+<!-- insumo-form.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -61,20 +62,25 @@
 
           <fieldset>
             <legend>Inventario y Costo</legend>
-            <div class="form-grid-3">
-              <div class="form-campo">
-                <label for="stock">Stock Actual</label>
-                <input type="number" id="stock" step="any" value="0" />
-              </div>
-              <div class="form-campo">
-                <label for="unidad">Unidad (kg, u, L)</label>
-                <input type="text" id="unidad" placeholder="ej: kg, u, L" value="unidad" />
-              </div>
-              <div class="form-campo">
-                <label for="ultimoPrecioCompra">Último Costo</label>
-                <input type="number" id="ultimoPrecioCompra" step="0.01" value="0" />
-              </div>
-            </div>
+           <!-- dentro del fieldset Inventario y Costo -->
+<div class="form-grid-3">
+  <div class="form-campo">
+    <label for="stock">Stock Actual</label>
+    <input type="number" id="stock" step="any" value="0" />
+    <small>Podés ajustarlo manualmente aquí. (También se actualiza desde Compras)</small>
+  </div>
+  <div class="form-campo">
+    <label for="unidad">Unidad (kg, u, L)</label>
+    <input type="text" id="unidad" placeholder="ej: kg, u, L" value="unidad" />
+    <small>Usá <strong>kg</strong> para pesables, <strong>u</strong> para unidades, <strong>L</strong> para líquidos.</small>
+  </div>
+  <div class="form-campo">
+    <label for="ultimoPrecioCompra">Último Costo</label>
+    <input type="number" id="ultimoPrecioCompra" step="0.01" value="0" />
+    <small>Ingrese el costo <strong>por unidad</strong> de la unidad indicada (ej: $/kg, $/u, $/L).</small>
+  </div>
+</div>
+
           </fieldset>
 
           <div class="form-acciones">

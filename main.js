@@ -1,5 +1,5 @@
-// main.js (VERSIÓN INTEGRADA CON HEARTBEAT + LICENCIAS, NO BLOQUEA UI Y CON TIMEOUT)
-const { app, BrowserWindow, ipcMain, protocol, session } = require("electron");
+// main.js (VERSIÓN INTEGRADA: Heartbeat + Licencias + Sync manual + instancia única)
+const { app, BrowserWindow, ipcMain, protocol, session, powerMonitor } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { Sequelize } = require("sequelize");
@@ -11,7 +11,8 @@ let subscriptionInterval;
 let consecutiveFailures = 0;
 // 3 días de fallos (1 chequeo por hora)
 const MAX_FAILURES_BEFORE_LOCK = 3 * 24;
-const RUN_SYNC_TIMEOUT_MS = 15_000; // 15 segundos para evitar cuelgues del main
+const RUN_SYNC_TIMEOUT_MS = 15_000; // 15s para evitar cuelgues del main
+const CHECK_INTERVAL = 60 * 60 * 1000; // 1 hora
 
 // --- DECLARACIONES ---
 let sequelize;
@@ -20,6 +21,31 @@ let models;
 // --- GESTIÓN DE VENTANAS ---
 let mainWindow, loginWindow, setupWindow, hardwareWindow, qrWindow, blockWindow;
 
+// ====== INSTANCIA ÚNICA ======
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    // Enviar al frente alguna ventana existente
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    } else {
+      // Si no hay ventanas, creamos la adecuada
+      if (models?.Usuario) {
+        models.Usuario.findOne({ where: { rol: "administrador" } })
+          .then((admin) => (admin ? createLoginWindow() : createAdminSetupWindow()))
+          .catch(() => createLoginWindow());
+      } else {
+        createLoginWindow();
+      }
+    }
+  });
+}
+
+// ====== HELPERS ======
 function createMainWindow() {
   if (mainWindow) {
     mainWindow.focus();
@@ -151,27 +177,40 @@ async function withTimeout(promise, ms, fallback) {
   }
 }
 
+/** Obtiene config de sync/licencia (primer admin encontrado) */
+async function getAdminSyncConfig() {
+  const adminConfig = await models.Usuario.findOne({ where: { rol: "administrador" } });
+  if (!adminConfig) return null;
+  return {
+    rowId: adminConfig.id,
+    sync_enabled: !!adminConfig.sync_enabled,
+    sync_api_url: (adminConfig.sync_api_url || "").trim(),
+    license_key: (adminConfig.license_key || "").trim(),
+  };
+}
+
+/** Persiste el estado de suscripción en el admin */
+async function persistSubscriptionStatus(rowId, status) {
+  try {
+    await models.Usuario.update({ subscription_status: status }, { where: { id: rowId } });
+  } catch (e) {
+    console.warn("[HEARTBEAT] No se pudo persistir subscription_status:", e?.message || e);
+  }
+}
+
 /** Heartbeat: verifica licencia y ejecuta sync */
 async function checkSubscriptionAndSync() {
   try {
     console.log("[HEARTBEAT] Chequeo suscripción + sync…");
 
-    // Busco el admin para obtener config de sync y licencia
-    const adminConfig = await models.Usuario.findOne({
-      where: { rol: "administrador" },
-    });
-
-    if (!adminConfig || !adminConfig.sync_enabled || !adminConfig.sync_api_url) {
+    const cfg = await getAdminSyncConfig();
+    if (!cfg || !cfg.sync_enabled || !cfg.sync_api_url) {
       console.log("[HEARTBEAT] Sincronización desactivada o incompleta. Omitiendo.");
       return;
     }
 
-    const apiUrl = String(adminConfig.sync_api_url).trim();
-    const licenseKey = String(adminConfig.license_key || "").trim();
-
-    // Si no hay license_key configurada, avisamos y (tras 3 días) bloqueamos
-    if (!licenseKey) {
-      console.warn("[HEARTBEAT] No hay license_key cargada en configuración.");
+    if (!cfg.license_key) {
+      console.warn("[HEARTBEAT] No hay license_key configurada.");
       consecutiveFailures++;
       if (consecutiveFailures >= MAX_FAILURES_BEFORE_LOCK) {
         return blockApp("No hay licencia configurada. Cargue su token de licencia en el panel de Administración.");
@@ -179,27 +218,20 @@ async function checkSubscriptionAndSync() {
       return;
     }
 
-    // Ejecutamos runSync con timeout para no colgar el proceso main
     const result = await withTimeout(
-      runSync(models, sequelize, apiUrl, licenseKey),
+      runSync(models, sequelize, cfg.sync_api_url, cfg.license_key),
       RUN_SYNC_TIMEOUT_MS,
       { success: false, message: "Timeout al validar/sincronizar (15s)", status: null }
     );
 
     if (result.success) {
       consecutiveFailures = 0;
-
-      // Persisto un snapshot del estado de suscripción
-      await models.Usuario.update(
-        { subscription_status: result.status },
-        { where: { id: adminConfig.id } }
-      );
+      await persistSubscriptionStatus(cfg.rowId, result.status);
 
       console.log(
         `[HEARTBEAT] OK. Estado: ${result.status?.status} (${result.status?.daysLeft ?? "-"} días restantes)`
       );
 
-      // Aviso visual si se acerca la expiración
       const currentMainWindow = BrowserWindow.getAllWindows().find((win) => win === mainWindow);
       if (currentMainWindow && result.status?.status === "warning") {
         currentMainWindow.webContents.send("show-toast", {
@@ -211,12 +243,10 @@ async function checkSubscriptionAndSync() {
       consecutiveFailures++;
       console.warn(`[HEARTBEAT] Fallo N° ${consecutiveFailures}. Motivo: ${result.message}`);
 
-      // Si el servidor respondió con estado inválido, bloquear
       if (result.status && (result.status.status === "expired" || result.status.status === "disabled")) {
-        return blockApp(result.message || "Licencia inválida.");
+        return blockApp(result.message || "Licencia inválida o expirada.");
       }
 
-      // Si fue error de red repetido por 3 días, bloquear
       if (consecutiveFailures >= MAX_FAILURES_BEFORE_LOCK) {
         return blockApp("No se pudo comprobar la suscripción durante 3 días. Revise su conexión o contacte soporte.");
       }
@@ -227,7 +257,7 @@ async function checkSubscriptionAndSync() {
   }
 }
 
-// --- CICLO DE VIDA ---
+// ====== CICLO DE VIDA ======
 app.on("ready", async () => {
   try {
     // Limpieza de sesión SIN tocar localStorage
@@ -368,7 +398,6 @@ app.on("ready", async () => {
     });
 
     // Heartbeat recurrente (cada hora) — no bloquea la UI
-    const CHECK_INTERVAL = 60 * 60 * 1000;
     subscriptionInterval = setInterval(checkSubscriptionAndSync, CHECK_INTERVAL);
 
     // Ventanas iniciales (ANTES del primer heartbeat)
@@ -383,6 +412,15 @@ app.on("ready", async () => {
         console.error("[HEARTBEAT] Primer chequeo falló:", e?.message || e)
       );
     });
+
+    // ====== POWER EVENTS: pausar/reanudar heartbeat ======
+    try {
+      powerMonitor.on("suspend", () => console.log("[POWER] suspend"));
+      powerMonitor.on("resume", () => {
+        console.log("[POWER] resume -> forzar heartbeat");
+        setImmediate(() => checkSubscriptionAndSync());
+      });
+    } catch {}
   } catch (error) {
     console.error("==============================================");
     console.error("❌ ERROR FATAL AL INICIALIZAR LA APLICACIÓN:", error);
@@ -391,7 +429,7 @@ app.on("ready", async () => {
   }
 });
 
-// LISTENERS IPC GLOBALES
+// ====== LISTENERS IPC GLOBALES ======
 const handleLogout = () => {
   if (mainWindow) mainWindow.close();
   [qrWindow].forEach((win) => {
@@ -418,6 +456,7 @@ ipcMain.on("hardware-setup-complete", () => {
   app.quit();
 });
 
+// === IPC: QR modal ===
 ipcMain.on("open-qr-modal", (event, data) => {
   if (qrWindow) {
     qrWindow.focus();
@@ -447,6 +486,32 @@ ipcMain.on("payment-successful", (event, externalReference) => {
 ipcMain.on("payment-cancelled", () => {
   if (mainWindow) mainWindow.webContents.send("mp-payment-cancelled");
   if (qrWindow) qrWindow.close();
+});
+
+// === IPC: RUN MANUAL SYNC (lo usa admin.js tras guardar) ===
+ipcMain.handle("run-manual-sync", async () => {
+  try {
+    const cfg = await getAdminSyncConfig();
+    if (!cfg || !cfg.sync_enabled || !cfg.sync_api_url) {
+      return { success: false, message: "Sincronización desactivada o incompleta.", status: null };
+    }
+    if (!cfg.license_key) {
+      return { success: false, message: "Falta token de licencia.", status: { status: "error" } };
+    }
+
+    const result = await withTimeout(
+      runSync(models, sequelize, cfg.sync_api_url, cfg.license_key),
+      RUN_SYNC_TIMEOUT_MS,
+      { success: false, message: "Timeout al sincronizar (15s)", status: null }
+    );
+
+    if (result.success) {
+      await persistSubscriptionStatus(cfg.rowId, result.status);
+    }
+    return result;
+  } catch (e) {
+    return { success: false, message: e?.message || "Error inesperado ejecutando sync." };
+  }
 });
 
 // Cierre app

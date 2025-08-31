@@ -4,7 +4,7 @@
 .caja-main {
   display: flex;
   flex-grow: 1;
-  height: 100vh;
+  height: 100vh0;
   overflow: hidden;
   position: relative; /* ✅ CRUCIAL: Contiene los elementos posicionados absolutamente */
 }

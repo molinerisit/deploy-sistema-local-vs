@@ -1,16 +1,63 @@
-// src/ipc-handlers/config-handlers.js
 const { ipcMain, BrowserWindow, app } = require("electron");
 const { SerialPort } = require("serialport");
 const path = require("path");
 const fs = require("fs/promises");
 const bcrypt = require("bcrypt");
-const { getScaleManager } = require("../scale/scale-manager");
+const crypto = require("crypto");
+const os = require("os");
 
-// Para disparar sync manual desde la UI
+const { getScaleManager } = require("../scale/scale-manager");
 const { runSync } = require("../sync-manager");
 
+/** ==== Helpers de dispositivo (ID local persistente) ==== */
+const DEVICE_FILE = "device.json";
+async function ensureDeviceId() {
+  const dir = app.getPath("userData");
+  const file = path.join(dir, DEVICE_FILE);
+  try {
+    const buf = await fs.readFile(file, "utf8");
+    const { deviceId } = JSON.parse(buf);
+    if (deviceId) return deviceId;
+  } catch {}
+  const deviceId = crypto.randomUUID();
+  await fs.mkdir(dir, { recursive: true }).catch(() => {});
+  await fs.writeFile(file, JSON.stringify({ deviceId }), "utf8");
+  return deviceId;
+}
+
+async function getOrCreateDevicePref(models, deviceId) {
+  const { DevicePreference } = models;
+  let pref = await DevicePreference.findOne({ where: { device_id: deviceId } });
+  if (!pref) {
+    pref = await DevicePreference.create({
+      device_id: deviceId,
+      hostname: os.hostname(),
+      platform: process.platform,
+      arch: process.arch,
+      printer_name: null,
+      scanner_port: null,
+      mp_active_remote_id: null,
+      mp_pos_id: null,
+      active_scale_remote_id: null,
+      config_balanza_conexion_override: null,
+    });
+  }
+  return pref;
+}
+
+/** ==== Helpers de catálogo ==== */
+function hashRemoteIdFromToken(accessToken) {
+  return crypto.createHash("sha256").update(String(accessToken || "")).digest("hex").slice(0, 24);
+}
+function buildScaleRemoteId(cfg) {
+  // determinístico por endpoint
+  const t = (cfg?.transport || "tcp").toLowerCase();
+  const k = t === "bt" ? (cfg?.btAddress || "") : `${cfg?.ip || ""}:${cfg?.port || ""}`;
+  return crypto.createHash("sha1").update(`${t}:${k}`).digest("hex").slice(0, 20);
+}
+
 function registerConfigHandlers(models, sequelize) {
-  const { Usuario } = models;
+  const { Usuario, MpToken, Scale, DevicePreference } = models;
 
   // 1) Setup inicial (admin)
   ipcMain.handle("submit-setup", async (_event, { nombre, password }) => {
@@ -27,7 +74,7 @@ function registerConfigHandlers(models, sequelize) {
         nombre: cleanName,
         password: hashedPassword,
         rol: "administrador",
-        permisos: ["all"], // Guardar como ARRAY (campo JSON), no stringificado
+        permisos: ["all"],
       });
 
       const { password: _omit, ...userData } = newAdmin.toJSON();
@@ -42,7 +89,7 @@ function registerConfigHandlers(models, sequelize) {
     }
   });
 
-  // 2) Leer config admin
+  // 2) Leer config admin (mezcla GLOBAL + preferencias locales por dispositivo)
   ipcMain.handle("get-admin-config", async () => {
     try {
       const admin = await Usuario.findOne({
@@ -50,8 +97,41 @@ function registerConfigHandlers(models, sequelize) {
         attributes: { exclude: ["password"] },
       });
       if (!admin) return null;
+
       const cfg = admin.toJSON();
       if (cfg.facturacion_activa == null) cfg.facturacion_activa = false;
+
+      // Inyectar preferencias por dispositivo
+      const deviceId = await ensureDeviceId();
+      const pref = await getOrCreateDevicePref(models, deviceId);
+
+      // Hardware (local)
+      cfg.config_puerto_scanner   = pref.scanner_port || "";
+      cfg.config_puerto_impresora = pref.printer_name || "";
+
+      // MP (local: selección activa)
+      cfg.mp_access_token = null; // nunca devolvemos token acá
+      cfg.mp_user_id      = cfg.mp_user_id || ""; // (si lo cargaron)
+      cfg.mp_pos_id       = pref.mp_pos_id || "";
+
+      // Balanza – selección activa (local). Si hay una activa, devolvemos su config como compat:
+      if (pref.active_scale_remote_id) {
+        const sc = await Scale.findOne({ where: { remote_id: pref.active_scale_remote_id } });
+        if (sc) {
+          cfg.config_balanza_conexion = {
+            transport: sc.transport,
+            ip: sc.ip,
+            port: sc.port,
+            btAddress: sc.btAddress,
+            protocol: sc.protocol,
+            timeoutMs: sc.timeoutMs,
+          };
+        }
+      }
+
+      // Formato de balanza (GLOBAL) se mantiene en cfg.config_balanza
+
+      // Info de suscripción cache (GLOBAL ya estaba en Usuario)
       return cfg;
     } catch (error) {
       console.error("[CONFIG] Error al leer config admin:", error);
@@ -60,17 +140,37 @@ function registerConfigHandlers(models, sequelize) {
   });
 
   // 3) Mercado Pago
+  //    - Upsert catálogo tenant-wide: MpToken (por accessToken → remote_id hash)
+  //    - Guardar selección activa local: DevicePreference { mp_active_remote_id, mp_pos_id }
   ipcMain.handle("save-mp-config", async (_event, data) => {
     try {
       const { accessToken, userId, posId } = data || {};
-      await Usuario.update(
-        {
-          mp_access_token: String(accessToken || "").trim(),
-          mp_user_id: String(userId || "").trim(),
-          mp_pos_id: String(posId || "").trim(),
-        },
-        { where: { rol: "administrador" } }
-      );
+      const cleanToken = String(accessToken || "").trim();
+      const cleanUser  = String(userId || "").trim();
+      const cleanPos   = String(posId || "").trim();
+
+      if (!cleanToken || !cleanPos) {
+        return { success: false, message: "Access Token y Caja (POS) son obligatorios." };
+      }
+
+      const remote_id = hashRemoteIdFromToken(cleanToken);
+
+      // Upsert de catálogo (token). Guardamos alias y user_id informativo.
+      // Nota: según tu seguridad, podés cifrar accessToken o ni almacenarlo completo.
+      await MpToken.upsert({
+        remote_id,
+        alias: cleanUser ? `MP-${cleanUser}` : `MP-${remote_id.slice(0,6)}`,
+        access_token: cleanToken, // <-- si querés, cifrar en el modelo/hook
+        user_id: cleanUser || null,
+      });
+
+      // Preferencia local (selección activa)
+      const deviceId = await ensureDeviceId();
+      const pref = await getOrCreateDevicePref(models, deviceId);
+      pref.mp_active_remote_id = remote_id;
+      pref.mp_pos_id = cleanPos;
+      await pref.save();
+
       return { success: true };
     } catch (error) {
       console.error("[CONFIG][MP] Error:", error);
@@ -78,7 +178,7 @@ function registerConfigHandlers(models, sequelize) {
     }
   });
 
-  // 4) Balanza
+  // 4) Balanza – formato (GLOBAL, parsing/generación)
   ipcMain.handle("save-balanza-config", async (_event, configData) => {
     try {
       await Usuario.update({ config_balanza: configData }, { where: { rol: "administrador" } });
@@ -89,7 +189,7 @@ function registerConfigHandlers(models, sequelize) {
     }
   });
 
-  // 5) Parámetros generales
+  // 5) Parámetros generales (GLOBAL)
   ipcMain.handle("save-general-config", async (_event, data) => {
     try {
       const recargo = Number.isFinite(+data?.recargoCredito) ? +data.recargoCredito : 0;
@@ -106,7 +206,7 @@ function registerConfigHandlers(models, sequelize) {
     }
   });
 
-  // 6) Hardware
+  // 6) Hardware (LOCAL por dispositivo)
   ipcMain.handle("get-available-ports", async () => {
     try {
       const serialPorts = await SerialPort.list();
@@ -125,15 +225,12 @@ function registerConfigHandlers(models, sequelize) {
   });
 
   ipcMain.handle("save-hardware-config", async (_event, data) => {
-    const { scannerPort, printerName } = data || {};
     try {
-      await Usuario.update(
-        {
-          config_puerto_scanner: scannerPort || null,
-          config_puerto_impresora: printerName || null,
-        },
-        { where: { rol: "administrador" } }
-      );
+      const deviceId = await ensureDeviceId();
+      const pref = await getOrCreateDevicePref(models, deviceId);
+      pref.scanner_port = data?.scannerPort || null;
+      pref.printer_name = data?.printerName || null;
+      await pref.save();
       return { success: true };
     } catch (error) {
       console.error("[HARDWARE-CONFIG] Error al guardar:", error);
@@ -141,7 +238,7 @@ function registerConfigHandlers(models, sequelize) {
     }
   });
 
-  // 7) Info del negocio + logo
+  // 7) Info del negocio + logo (GLOBAL)
   ipcMain.handle("save-business-info", async (_event, data) => {
     try {
       const { nombre, slogan, footer, logoBase64 } = data || {};
@@ -172,7 +269,7 @@ function registerConfigHandlers(models, sequelize) {
     }
   });
 
-  // 8) Estado de suscripción (cache local)
+  // 8) Estado de suscripción (cache local GLOBAL en Usuario)
   ipcMain.handle("get-subscription-status", async () => {
     try {
       const admin = await Usuario.findOne({ where: { rol: "administrador" } });
@@ -184,36 +281,60 @@ function registerConfigHandlers(models, sequelize) {
     }
   });
 
-  // Guardar config de conexión de balanza
-ipcMain.handle("save-scale-config", async (_event, cfg) => {
-  try {
-    await Usuario.update(
-      { config_balanza_conexion: cfg || null },
-      { where: { rol: "administrador" } }
-    );
-    // refrescar instancia del manager con la nueva config
-    const mgr = await getScaleManager(models);
-    await mgr.reloadConfig();
-    return { success: true };
-  } catch (e) {
-    console.error("[CONFIG][SCALE] Error:", e);
-    return { success: false, message: e.message };
-  }
-});
+  // 9) Config de conexión de balanza (CATÁLOGO + preferencia LOCAL)
+  //    - Upsert en Scale por endpoint → remote_id
+  //    - Guardar selección activa en DevicePreference.active_scale_remote_id
+  ipcMain.handle("save-scale-config", async (_event, cfg) => {
+    try {
+      const clean = {
+        transport: (cfg?.transport || "tcp").toLowerCase(),
+        ip: cfg?.ip || null,
+        port: Number.isFinite(+cfg?.port) ? +cfg.port : 8000,
+        btAddress: cfg?.btAddress || null,
+        protocol: cfg?.protocol || "kretz-report",
+        timeoutMs: Number.isFinite(+cfg?.timeoutMs) ? +cfg.timeoutMs : 4000,
+        name: cfg?.name || null,
+      };
 
-// Probar conexión
-ipcMain.handle("scale-test-connection", async () => {
-  try {
-    const mgr = await getScaleManager(models);
-    const ok = await mgr.testConnection();
-    return ok ? { success: true, message: ok } : { success: false, message: "Sin respuesta" };
-  } catch (e) {
-    return { success: false, message: e.message || "Error al conectar" };
-  }
-});
+      const remote_id = buildScaleRemoteId(clean);
+      await Scale.upsert({
+        remote_id,
+        name: clean.name || `Kretz ${clean.transport} ${clean.ip || clean.btAddress || ""}`.trim(),
+        transport: clean.transport,
+        ip: clean.ip,
+        port: clean.port,
+        btAddress: clean.btAddress,
+        protocol: clean.protocol,
+        timeoutMs: clean.timeoutMs,
+      });
 
+      const deviceId = await ensureDeviceId();
+      const pref = await getOrCreateDevicePref(models, deviceId);
+      pref.active_scale_remote_id = remote_id;
+      await pref.save();
 
-  // 9) Sincronización manual
+      // refrescar instancia del manager con la nueva config activa
+      const mgr = await getScaleManager(models);
+      await mgr.reloadConfig();
+
+      return { success: true };
+    } catch (e) {
+      console.error("[CONFIG][SCALE] Error:", e);
+      return { success: false, message: e.message };
+    }
+  });
+
+  ipcMain.handle("scale-test-connection", async () => {
+    try {
+      const mgr = await getScaleManager(models);
+      const ok = await mgr.testConnection();
+      return ok ? { success: true, message: ok } : { success: false, message: "Sin respuesta" };
+    } catch (e) {
+      return { success: false, message: e.message || "Error al conectar" };
+    }
+  });
+
+  // 10) Sincronización manual (GLOBAL)
   ipcMain.handle("run-manual-sync", async () => {
     try {
       const admin = await Usuario.findOne({ where: { rol: "administrador" } });

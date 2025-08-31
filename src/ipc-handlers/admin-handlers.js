@@ -1,4 +1,3 @@
-// src/ipc-handlers/admin-handlers.js
 // Handlers de USUARIOS / EMPLEADOS / GASTOS + config (sync/AFIP/arqueo) + test-print
 
 const { ipcMain, BrowserWindow } = require("electron");
@@ -56,7 +55,6 @@ function registerAdminHandlers(models) {
         return { success: false, message: "El rol es obligatorio." };
       }
 
-      // Aseguramos que permisos sea un array (el campo en DB es JSON)
       const permsArray = Array.isArray(permisos) ? permisos : [];
 
       if (id) {
@@ -101,7 +99,6 @@ function registerAdminHandlers(models) {
       if (!userToDelete) return { success: false, message: "El usuario no existe." };
 
       if (userToDelete.rol === "administrador") {
-        // Opcional: impedir borrar el último admin
         const admins = await Usuario.count({ where: { rol: "administrador" } });
         if (admins <= 1) {
           return { success: false, message: "No se puede eliminar el último administrador." };
@@ -116,7 +113,7 @@ function registerAdminHandlers(models) {
   });
 
   // -----------------------------
-  // SINCRONIZACIÓN (config)
+  // SINCRONIZACIÓN (config)  → GLOBAL (tenant)
   // -----------------------------
   ipcMain.handle("save-sync-config", async (_event, data) => {
     try {
@@ -241,7 +238,7 @@ function registerAdminHandlers(models) {
   });
 
   // -----------------------------
-  // AFIP (CONFIG)
+  // AFIP (CONFIG) → GLOBAL (tenant)
   // -----------------------------
   ipcMain.handle("save-afip-config", async (_event, data) => {
     try {
@@ -262,7 +259,7 @@ function registerAdminHandlers(models) {
   });
 
   // -----------------------------
-  // FACTURACIÓN: toggle
+  // FACTURACIÓN: toggle → GLOBAL (tenant)
   // -----------------------------
   ipcMain.handle("save-facturacion-status", async (_event, status) => {
     try {
@@ -274,7 +271,7 @@ function registerAdminHandlers(models) {
   });
 
   // -----------------------------
-  // CAJA / ARQUEO (config)
+  // CAJA / ARQUEO (config) → GLOBAL (tenant)
   // -----------------------------
   ipcMain.handle("save-arqueo-config", async (_event, data) => {
     try {
@@ -290,7 +287,7 @@ function registerAdminHandlers(models) {
   });
 
   // -----------------------------
-  // TEST DE IMPRESIÓN
+  // TEST DE IMPRESIÓN (usa impresora del SO seleccionada en UI)
   // -----------------------------
   ipcMain.handle("test-print", async (_event, printerName) => {
     try {
@@ -300,7 +297,7 @@ function registerAdminHandlers(models) {
       }
 
       const options = {
-        silent: false, // true = directo sin diálogo
+        silent: false,
         printBackground: true,
         deviceName: printerName || undefined,
       };

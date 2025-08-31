@@ -1,52 +1,64 @@
 /* ===================
-   Sidebar (Global)
+   Navbar (CSS FINAL unificado y blindado) — CORREGIDO
+   - Mantiene ancho abierto igual
+   - SOLO en colapsado se hace 1px/2px más ancho
+   - Íconos con aire; textos ocultos en colapsado
    =================== */
+
+/* Anchos del sidebar */
 :root {
-  --sidebar-width: 15rem;           /* = 240px aprox */
-  --sidebar-collapsed-width: 64px;  /* ancho cuando está colapsado */
+  --sidebar-width: 15rem;           /* ≈240px abierto */
+  --sidebar-collapsed-width: 64px;  /* base colapsado (no tocamos aquí) */
 }
 
-/* El contenedor padre de sidebar + main */
-.container {
-  display: flex;
-  position: relative; /* para posicionar el toggle */
-  min-height: 100vh;
-  transition: all 0.3s ease;
+/* Contenedor padre de sidebar + main (soporta .container y .container-fluid) */
+.container,
+.container-fluid {
+  display: flex !important;
+  position: relative !important;    /* para posicionar el toggle con left: ... */
+  min-height: 100vh !important;
+  width: 100% !important;
 }
 
+/* ===================
+   Sidebar
+   =================== */
+/* Grid asegura 3 zonas: header (auto) + nav (1fr) + footer (auto) */
 .sidebar {
-  width: var(--sidebar-width);
-  min-width: var(--sidebar-width);
-  flex-shrink: 0;
+  width: var(--sidebar-width) !important;
+  min-width: var(--sidebar-width) !important;
+  flex: 0 0 var(--sidebar-width) !important;
+
   background-color: var(--primary-color);
   color: #e0e0e0;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  transition: width 0.3s ease, min-width 0.3s ease;
-  overflow: hidden; /* ocultar texto cuando se colapsa */
+  height: 100vh !important;
+
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  overflow: hidden !important; /* el scroll va dentro de .sidebar-nav */
+
+  transition: width 0.3s ease, min-width 0.3s ease, flex-basis 0.3s ease;
 }
 
 /* ===================
    Header
    =================== */
 .sidebar-header {
-  padding: 1rem;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem 1rem 0.75rem !important;
+  text-align: center !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  position: static !important; /* no relativo: evita que el toggle se ancle aquí */
 }
 
 .sidebar-logo {
-  width: 3rem;
-  height: 3rem;
+  width: 3rem; height: 3rem;
   object-fit: cover;
   border-radius: 50%;
   border: 2px solid var(--accent-color);
-  margin: 0 auto 0.5rem;
+  margin: 0.25rem auto 0.5rem;
   transition: transform 0.3s ease;
   display: block;
 }
-
 .sidebar-logo:hover { transform: scale(1.1) rotate(8deg); }
 
 .sidebar-header h2 {
@@ -62,118 +74,167 @@
 /* ===================
    Navegación
    =================== */
-.sidebar-nav { flex-grow: 1; overflow-y: auto; }
-
-.sidebar-nav ul { list-style: none; margin: 0; padding: 0.5rem 0; }
+/* CLAVE: min-height:0 para que el scroll quede acá dentro del grid */
+.sidebar-nav {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 0.5rem 0 !important;
+}
+.sidebar-nav ul { list-style: none; margin: 0; padding: 0; }
+.sidebar-nav li { display: block; }
 
 .sidebar-nav a {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s ease, color 0.2s ease;
-  white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  padding: 0.75rem 1rem !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  text-decoration: none !important;
+  border-radius: 0.5rem !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
-
 .sidebar-nav a:hover,
-.sidebar-nav a:focus-visible { background-color: var(--secondary-color); color: #fff; }
+.sidebar-nav a:focus-visible { background-color: var(--secondary-color) !important; color: #fff !important; }
 
-.sidebar-nav a[aria-current="page"] { background-color: var(--accent-color); color: #fff; font-weight: 600; }
+.sidebar-nav a[aria-current="page"] {
+  background-color: var(--accent-color) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
 
 /* ===================
-   Footer
+   Footer (ADMIN / AJUSTES) — COMPACTO
    =================== */
+/* Footer fijo y sin wraps para no “comerse” la lista */
 .sidebar-footer {
-  margin-top: auto;
-  padding: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  flex: 0 0 auto !important;          /* por compatibilidad si alguna hoja lo pone en flex */
+  height: 52px !important;
+  padding: 8px 10px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
 }
 
-.user-info { flex-grow: 1; overflow: hidden; }
-.user-info .username {
-  margin: 0;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #fff;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
+.user-info {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;            /* permite elipsis */
+  overflow: hidden !important;
 }
+.user-info .username,
 .user-info .role {
-  margin: 0;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
-  text-transform: capitalize;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
+  margin: 0 !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  max-width: 100% !important;
 }
+/* Ocultar rol para ahorrar altura (quitá esta línea si querés verlo) */
+.user-info .role { display: none !important; }
 
-.footer-actions { display: flex; align-items: center; gap: 0.5rem; }
+.footer-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 0 0 auto !important;
+  flex-wrap: nowrap !important;       /* nunca saltar de línea */
+  min-width: max-content !important;
+}
 .footer-icon-btn {
-  background-color: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: #fff;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: none !important;
+  color: #fff !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+  padding: 0 !important;
 }
 .footer-icon-btn:hover,
-.footer-icon-btn:focus-visible { background-color: rgba(255, 255, 255, 0.25); }
+.footer-icon-btn:focus-visible { background-color: rgba(255, 255, 255, 0.25) !important; }
 
 /* ===================
    Colapsado (modo compacto con solo íconos)
    =================== */
-.container.sidebar-collapsed .sidebar {
-  width: var(--sidebar-collapsed-width);
-  min-width: var(--sidebar-collapsed-width);
+.container.sidebar-collapsed .sidebar,
+.container-fluid.sidebar-collapsed .sidebar {
+  width: var(--sidebar-collapsed-width) !important;
+  min-width: var(--sidebar-collapsed-width) !important;
+  flex-basis: var(--sidebar-collapsed-width) !important;
 }
 
-/* Ocultamos el nombre del negocio para ganar espacio */
-.container.sidebar-collapsed .sidebar-header h2 { display: none; }
+.container.sidebar-collapsed .sidebar-header h2,
+.container-fluid.sidebar-collapsed .sidebar-header h2 { display: none !important; }
 
-/* Enlaces centrados con solo íconos visibles (el texto se corta por overflow) */
-.container.sidebar-collapsed .sidebar-nav a { gap: 0.5rem; justify-content: center; }
-.container.sidebar-collapsed .sidebar-nav a svg { margin: 0 auto; min-width: 20px; }
+.container.sidebar-collapsed .sidebar-nav a,
+.container-fluid.sidebar-collapsed .sidebar-nav a {
+  gap: 0.5rem !important;
+  justify-content: center !important;
+  padding: 0.6rem 0.4rem !important;
+}
+.container.sidebar-collapsed .sidebar-nav a svg,
+.container-fluid.sidebar-collapsed .sidebar-nav a svg {
+  margin: 0 auto !important;
+  min-width: 20px !important;
+}
+
+/* Footer aún más compacto en colapsado */
+.container.sidebar-collapsed .sidebar-footer,
+.container-fluid.sidebar-collapsed .sidebar-footer {
+  height: 44px !important;
+  padding: 6px !important;
+}
+.container.sidebar-collapsed .user-info,
+.container-fluid.sidebar-collapsed .user-info { display: none !important; }
 
 /* ===================
    Botón Toggle (global)
    =================== */
-.toggle-sidebar {
-  position: absolute;
-  bottom: 12px;
-  left: var(--sidebar-width);
-  padding: 6px 10px;
-  background: var(--color-primario, #3f51b5);
-  color: #fff;
-  border: none;
-  border-radius: 0 6px 6px 0;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  line-height: 1;
-  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-  z-index: 2000;
-}
-.toggle-sidebar:hover { background: var(--color-primario-hover, #2e3c9e); }
-.toggle-sidebar span { display: inline-block; transition: transform 0.3s ease; }
+/* El botón debe ser HERMANO del .sidebar (no hijo) para que no lo recorte el overflow */
+.sidebar-toggle {
+  position: absolute !important;
+  bottom: 0px !important;
+  /* montamos 2px sobre el borde del sidebar para que no quede rendija */
+  left: calc(var(--sidebar-width) - 2px) !important;
 
-/* Cuando el sidebar está colapsado, pegamos el botón al borde izquierdo */
-.container.sidebar-collapsed .toggle-sidebar { left: 0; border-radius: 0 6px 6px 0; }
-.container.sidebar-collapsed .toggle-sidebar span { transform: rotate(180deg); }
+  padding: 6px 10px !important;
+  background: var(--primary-color) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 0 6px 6px 0 !important;
+  cursor: pointer !important;
+  font-size: 1rem !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2) !important;
+  transition: left 0.3s ease, background 0.3s ease, transform 0.3s ease !important;
+  z-index: 2000 !important;
+}
+.sidebar-toggle:hover { background: var(--secondary-color) !important; }
+.sidebar-toggle span { display: inline-block !important; transition: transform 0.3s ease !important; }
+
+.container.sidebar-collapsed .sidebar-toggle,
+.container-fluid.sidebar-collapsed .sidebar-toggle {
+  left: calc(var(--sidebar-collapsed-width) - 2px) !important;
+  border-radius: 0 6px 6px 0 !important;
+}
+.container.sidebar-collapsed .sidebar-toggle span,
+.container-fluid.sidebar-collapsed .sidebar-toggle span { transform: rotate(180deg) !important; }
 
 /* ===================
    Scrollbar (opcional, estético)
@@ -181,3 +242,128 @@
 .sidebar-nav::-webkit-scrollbar { width: 8px; }
 .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+
+/* ===================
+   Guardas contra estilos viejos
+   =================== */
+.container.sidebar-collapsed .main-content,
+.container-fluid.sidebar-collapsed .main-content { width: auto !important; } /* sin width:calc(...) */
+.sidebar { margin: 0 !important; border: 0 !important; }
+
+/* ============================
+   Colapsado: ocultar etiquetas (mostrar solo íconos)
+   ============================ */
+.container.sidebar-collapsed .sidebar-nav a,
+.container-fluid.sidebar-collapsed .sidebar-nav a {
+  justify-content: center !important;
+  gap: 0 !important;               
+  padding: 0.6rem 0.4rem !important;
+  color: transparent !important;   /* oculta texto */
+  font-size: 0 !important;         
+  text-shadow: none !important;
+}
+.container.sidebar-collapsed .sidebar-nav a svg,
+.container-fluid.sidebar-collapsed .sidebar-nav a svg {
+  color: #fff !important;
+  stroke: #fff !important;
+  margin: 0 auto !important;
+  min-width: 20px !important;
+  font-size: 16px !important;
+}
+.container.sidebar-collapsed .sidebar-nav a:hover,
+.container-fluid.sidebar-collapsed .sidebar-nav a:hover {
+  background-color: var(--secondary-color) !important;
+}
+.container.sidebar-collapsed .sidebar-nav a[aria-current="page"],
+.container-fluid.sidebar-collapsed .sidebar-nav a[aria-current="page"] {
+  background-color: var(--accent-color) !important;
+}
+
+/* ============================
+   Colapsado: logo con aire
+   ============================ */
+.container.sidebar-collapsed .sidebar-header,
+.container-fluid.sidebar-collapsed .sidebar-header{
+  padding: 10px 8px !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.container.sidebar-collapsed .sidebar-logo,
+.container-fluid.sidebar-collapsed .sidebar-logo{
+  width: 36px !important;
+  height: 36px !important;
+  margin: 4px auto !important;
+  border-width: 2px !important;
+}
+
+/* ============================
+   Colapsado: footer con aire
+   ============================ */
+.container.sidebar-collapsed .sidebar-footer,
+.container-fluid.sidebar-collapsed .sidebar-footer{
+  padding: 6px 8px !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+.container.sidebar-collapsed .footer-actions,
+.container-fluid.sidebar-collapsed .footer-actions{
+  width: 100% !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+.container.sidebar-collapsed .footer-icon-btn,
+.container-fluid.sidebar-collapsed .footer-icon-btn{
+  width: 28px !important;
+  height: 28px !important;
+  margin: 0 2px !important;
+}
+@supports (padding: max(0px)) {
+  .container.sidebar-collapsed .sidebar-footer,
+  .container-fluid.sidebar-collapsed .sidebar-footer{
+    padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* =========================================================
+   SOLO EN COLAPSADO: +1px (o +2px) de ancho para más aire
+   (sin tocar el ancho abierto)
+   ========================================================= */
+/* Opción +1px (65px) */
+.container.sidebar-collapsed .sidebar,
+.container-fluid.sidebar-collapsed .sidebar{
+  width: 65px !important;
+  min-width: 65px !important;
+  flex-basis: 65px !important;
+}
+/* Si preferís +2px, activá esto y comentá el bloque de 65px:
+.container.sidebar-collapsed .sidebar,
+.container-fluid.sidebar-collapsed .sidebar{
+  width: 66px !important;
+  min-width: 66px !important;
+  flex-basis: 66px !important;
+}
+*/
+
+/* Ajustamos el botón al nuevo borde en colapsado (65px) */
+.container.sidebar-collapsed .sidebar-toggle,
+.container-fluid.sidebar-collapsed .sidebar-toggle{
+  left: calc(65px - 2px) !important;  /* si usás 66px arriba, cambiá a 66px - 2px */
+}
+
+/* Un toque más de padding lateral en links colapsados
+   para que los íconos no toquen el borde */
+.container.sidebar-collapsed .sidebar-nav a,
+.container-fluid.sidebar-collapsed .sidebar-nav a{
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+/* Footer colapsado con aire lateral */
+.container.sidebar-collapsed .sidebar-footer,
+.container-fluid.sidebar-collapsed .sidebar-footer{
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
